@@ -2,6 +2,7 @@
  * 2 Player Games: The Challenge — PSP Edition
  * Native C++11 / PSPSDK / SDL2 Port
  * 1v1 Local Split-Console Multiplayer & Single Player VS AI
+ * 6 Minigames: Ping Pong, Air Hockey, Spinner War, Tank Battle, Checkers, Chess
  */
 
 #include <SDL.h>
@@ -295,6 +296,8 @@ enum MinigameType {
     GAME_AIRHOCKEY,
     GAME_SPINNERS,
     GAME_TANKS,
+    GAME_CHECKERS,
+    GAME_CHESS,
     GAME_COUNT
 };
 
@@ -331,23 +334,6 @@ static void read_inputs(GamePadState &out, GameMode mode) {
     sceCtrlPeekBufferPositive(&pad_curr, 1);
 
     if (mode == MODE_2P_LOCAL) {
-        /*
-         * 2-Player Split-Console Layout:
-         * Top of PSP is North.
-         * Player 1 sits West looking East:
-         *   UP    = D-Pad Right (into screen)
-         *   DOWN  = D-Pad Left  (away from screen)
-         *   LEFT  = D-Pad Up    (North)
-         *   RIGHT = D-Pad Down  (South)
-         *   ACTION= L Trigger
-         *
-         * Player 2 sits East looking West:
-         *   UP    = Square   (into screen)
-         *   DOWN  = Circle   (away from screen)
-         *   LEFT  = Cross    (South)
-         *   RIGHT = Triangle (North)
-         *   ACTION= R Trigger
-         */
         out.p1.up    = (pad_curr.Buttons & PSP_CTRL_RIGHT) || (pad_curr.Lx > 185);
         out.p1.down  = (pad_curr.Buttons & PSP_CTRL_LEFT)  || (pad_curr.Lx < 70);
         out.p1.left  = (pad_curr.Buttons & PSP_CTRL_UP)    || (pad_curr.Ly < 70);
@@ -360,10 +346,6 @@ static void read_inputs(GamePadState &out, GameMode mode) {
         out.p2.right = (pad_curr.Buttons & PSP_CTRL_TRIANGLE) != 0;
         out.p2.action = (pad_curr.Buttons & PSP_CTRL_RTRIGGER) != 0;
     } else {
-        /*
-         * 1-Player Standard Handheld Layout:
-         * Standard D-Pad + Analog Nub + Cross / L Trigger
-         */
         out.p1.up    = (pad_curr.Buttons & PSP_CTRL_UP)    || (pad_curr.Ly < 70);
         out.p1.down  = (pad_curr.Buttons & PSP_CTRL_DOWN)  || (pad_curr.Ly > 185);
         out.p1.left  = (pad_curr.Buttons & PSP_CTRL_LEFT)  || (pad_curr.Lx < 70);
@@ -407,7 +389,6 @@ struct PingPong {
     void update(const GamePadState &pad, GameMode mode, int &winner) {
         float speed = 4.5f;
 
-        // Player 1 controls (Left)
         if (mode == MODE_2P_LOCAL) {
             if (pad.p1.left || pad.p1.up)    p1_y -= speed;
             if (pad.p1.right || pad.p1.down) p1_y += speed;
@@ -418,7 +399,6 @@ struct PingPong {
         if (p1_y < 35.0f) p1_y = 35.0f;
         if (p1_y > SCR_H - 35.0f) p1_y = SCR_H - 35.0f;
 
-        // Player 2 / AI controls (Right)
         if (mode == MODE_1P_VS_AI) {
             float target_y = ball_y;
             float diff = target_y - p2_y;
@@ -433,15 +413,12 @@ struct PingPong {
         if (p2_y < 35.0f) p2_y = 35.0f;
         if (p2_y > SCR_H - 35.0f) p2_y = SCR_H - 35.0f;
 
-        // Ball movement
         ball_x += ball_vx;
         ball_y += ball_vy;
 
-        // Top / Bottom wall bounce
         if (ball_y <= 24.0f) { ball_y = 24.0f; ball_vy = -ball_vy; play_tone(320.0f, 30); }
         if (ball_y >= SCR_H - 12.0f) { ball_y = SCR_H - 12.0f; ball_vy = -ball_vy; play_tone(320.0f, 30); }
 
-        // Paddle 1 Collision
         float p1_x = 24.0f;
         if (ball_x - 6.0f <= p1_x + paddle_w && ball_x >= p1_x && ball_vx < 0) {
             if (ball_y >= p1_y - paddle_h / 2.0f && ball_y <= p1_y + paddle_h / 2.0f) {
@@ -452,7 +429,6 @@ struct PingPong {
             }
         }
 
-        // Paddle 2 Collision
         float p2_x = SCR_W - 34.0f;
         if (ball_x + 6.0f >= p2_x && ball_x <= p2_x + paddle_w && ball_vx > 0) {
             if (ball_y >= p2_y - paddle_h / 2.0f && ball_y <= p2_y + paddle_h / 2.0f) {
@@ -463,7 +439,6 @@ struct PingPong {
             }
         }
 
-        // Score Goal Check
         if (ball_x < 0) {
             score2++;
             play_tone(180.0f, 150);
@@ -478,40 +453,33 @@ struct PingPong {
     }
 
     void render(SDL_Renderer *ren, GameMode mode) {
-        // Center dividing dotted net
         set_color(ren, COL_BORDER);
         for (int y = 20; y < SCR_H - 10; y += 12) {
             SDL_Rect net = {SCR_W / 2 - 1, y, 2, 6};
             SDL_RenderFillRect(ren, &net);
         }
 
-        // Left Paddle (Blue)
         set_color(ren, COL_BLUE);
         SDL_Rect rc1 = {24, (int)(p1_y - paddle_h / 2.0f), (int)paddle_w, (int)paddle_h};
         SDL_RenderFillRect(ren, &rc1);
 
-        // Right Paddle (Red)
         set_color(ren, COL_RED);
         SDL_Rect rc2 = {SCR_W - 34, (int)(p2_y - paddle_h / 2.0f), (int)paddle_w, (int)paddle_h};
         SDL_RenderFillRect(ren, &rc2);
 
-        // Ball
         draw_circle(ren, (int)ball_x, (int)ball_y, 5, COL_WHITE);
 
-        // Scores
         char sbuf1[16], sbuf2[16];
         snprintf(sbuf1, sizeof(sbuf1), "%d", score1);
         snprintf(sbuf2, sizeof(sbuf2), "%d", score2);
 
         if (mode == MODE_2P_LOCAL) {
-            // Rotated UI facing each player's controls
             draw_centered_str_p1(ren, 45, SCR_H / 2, sbuf1, COL_BLUE, 3);
             draw_centered_str_p1(ren, 18, SCR_H / 2, "PLAYER 1", COL_DIM, 1);
 
             draw_centered_str_p2(ren, SCR_W - 66, SCR_H / 2, sbuf2, COL_RED, 3);
             draw_centered_str_p2(ren, SCR_W - 22, SCR_H / 2, "PLAYER 2", COL_DIM, 1);
         } else {
-            // Standard horizontal HUD at top
             draw_str(ren, SCR_W / 2 - 50, 24, sbuf1, COL_BLUE, 3);
             draw_str(ren, SCR_W / 2 + 32, 24, sbuf2, COL_RED, 3);
         }
@@ -532,12 +500,9 @@ struct AirHockey {
 
     void reset(bool reset_scores = true) {
         if (reset_scores) { score1 = 0; score2 = 0; }
-        p1_x = 70.0f;
-        p1_y = SCR_H / 2.0f;
-        p2_x = SCR_W - 70.0f;
-        p2_y = SCR_H / 2.0f;
-        puck_x = SCR_W / 2.0f;
-        puck_y = SCR_H / 2.0f;
+        p1_x = 70.0f;  p1_y = SCR_H / 2.0f;
+        p2_x = SCR_W - 70.0f; p2_y = SCR_H / 2.0f;
+        puck_x = SCR_W / 2.0f; puck_y = SCR_H / 2.0f;
         puck_vx = (rand() % 2 == 0 ? 2.5f : -2.5f);
         puck_vy = ((rand() % 100) - 50) / 30.0f;
         mallet_r = 16.0f;
@@ -548,12 +513,11 @@ struct AirHockey {
     void update(const GamePadState &pad, GameMode mode, int &winner) {
         float speed = 3.8f;
 
-        // P1 2D Control (Restricted to Left Half: x <= 225)
         if (mode == MODE_2P_LOCAL) {
-            if (pad.p1.up)    p1_x += speed; // Forward towards opponent
-            if (pad.p1.down)  p1_x -= speed; // Retreat to goal
-            if (pad.p1.left)  p1_y -= speed; // Left (North)
-            if (pad.p1.right) p1_y += speed; // Right (South)
+            if (pad.p1.up)    p1_x += speed;
+            if (pad.p1.down)  p1_x -= speed;
+            if (pad.p1.left)  p1_y -= speed;
+            if (pad.p1.right) p1_y += speed;
         } else {
             if (pad.p1.up)    p1_y -= speed;
             if (pad.p1.down)  p1_y += speed;
@@ -565,121 +529,90 @@ struct AirHockey {
         if (p1_y < 40.0f)  p1_y = 40.0f;
         if (p1_y > SCR_H - 40.0f) p1_y = SCR_H - 40.0f;
 
-        // P2 / AI 2D Control (Restricted to Right Half: x >= 255)
         if (mode == MODE_1P_VS_AI) {
             float dest_x = SCR_W - 65.0f;
             float dest_y = puck_y;
-            if (puck_x > SCR_W / 2.0f) {
-                dest_x = puck_x; // Attack puck
-            }
+            if (puck_x > SCR_W / 2.0f) dest_x = puck_x;
             float dx = dest_x - p2_x;
             float dy = dest_y - p2_y;
             p2_x += dx * 0.08f;
             p2_y += dy * 0.08f;
         } else {
-            if (pad.p2.up)    p2_x -= speed; // Forward towards opponent (-X)
-            if (pad.p2.down)  p2_x += speed; // Retreat (+X)
-            if (pad.p2.left)  p2_y += speed; // Left (+Y)
-            if (pad.p2.right) p2_y -= speed; // Right (-Y)
+            if (pad.p2.up)    p2_x -= speed;
+            if (pad.p2.down)  p2_x += speed;
+            if (pad.p2.left)  p2_y += speed;
+            if (pad.p2.right) p2_y -= speed;
         }
         if (p2_x < 255.0f)        p2_x = 255.0f;
         if (p2_x > SCR_W - 36.0f) p2_x = SCR_W - 36.0f;
         if (p2_y < 40.0f)         p2_y = 40.0f;
         if (p2_y > SCR_H - 40.0f) p2_y = SCR_H - 40.0f;
 
-        // Puck Physics
         puck_x += puck_vx;
         puck_y += puck_vy;
         puck_vx *= 0.992f;
         puck_vy *= 0.992f;
 
-        // Top and Bottom table rebounds
-        if (puck_y - puck_r <= 22.0f) {
-            puck_y = 22.0f + puck_r;
-            puck_vy = -puck_vy;
-            play_tone(340.0f, 25);
-        }
-        if (puck_y + puck_r >= SCR_H - 22.0f) {
-            puck_y = SCR_H - 22.0f - puck_r;
-            puck_vy = -puck_vy;
-            play_tone(340.0f, 25);
-        }
+        if (puck_y - puck_r <= 22.0f) { puck_y = 22.0f + puck_r; puck_vy = -puck_vy; play_tone(340.0f, 25); }
+        if (puck_y + puck_r >= SCR_H - 22.0f) { puck_y = SCR_H - 22.0f - puck_r; puck_vy = -puck_vy; play_tone(340.0f, 25); }
 
-        // Left and Right goal zones
         bool in_goal_y = (puck_y >= 96.0f && puck_y <= 176.0f);
 
         if (puck_x - puck_r <= 20.0f) {
             if (in_goal_y) {
-                score2++;
-                play_tone(180.0f, 150);
-                if (score2 >= target_score) winner = 2;
-                else reset(false);
+                score2++; play_tone(180.0f, 150);
+                if (score2 >= target_score) winner = 2; else reset(false);
                 return;
             } else {
-                puck_x = 20.0f + puck_r;
-                puck_vx = -puck_vx;
-                play_tone(340.0f, 25);
+                puck_x = 20.0f + puck_r; puck_vx = -puck_vx; play_tone(340.0f, 25);
             }
         }
 
         if (puck_x + puck_r >= SCR_W - 20.0f) {
             if (in_goal_y) {
-                score1++;
-                play_tone(640.0f, 150);
-                if (score1 >= target_score) winner = 1;
-                else reset(false);
+                score1++; play_tone(640.0f, 150);
+                if (score1 >= target_score) winner = 1; else reset(false);
                 return;
             } else {
-                puck_x = SCR_W - 20.0f - puck_r;
-                puck_vx = -puck_vx;
-                play_tone(340.0f, 25);
+                puck_x = SCR_W - 20.0f - puck_r; puck_vx = -puck_vx; play_tone(340.0f, 25);
             }
         }
 
-        // Collision with P1 Mallet
         float d1x = puck_x - p1_x;
         float d1y = puck_y - p1_y;
         float dist1 = sqrtf(d1x * d1x + d1y * d1y);
         if (dist1 < mallet_r + puck_r && dist1 > 0.001f) {
-            float nx = d1x / dist1;
-            float ny = d1y / dist1;
+            float nx = d1x / dist1; float ny = d1y / dist1;
             puck_x = p1_x + nx * (mallet_r + puck_r);
             puck_y = p1_y + ny * (mallet_r + puck_r);
             float impulse = pad.p1.action ? 7.2f : 5.0f;
-            puck_vx = nx * impulse;
-            puck_vy = ny * impulse;
+            puck_vx = nx * impulse; puck_vy = ny * impulse;
             play_tone(pad.p1.action ? 680.0f : 450.0f, 35);
         }
 
-        // Collision with P2 Mallet
         float d2x = puck_x - p2_x;
         float d2y = puck_y - p2_y;
         float dist2 = sqrtf(d2x * d2x + d2y * d2y);
         if (dist2 < mallet_r + puck_r && dist2 > 0.001f) {
-            float nx = d2x / dist2;
-            float ny = d2y / dist2;
+            float nx = d2x / dist2; float ny = d2y / dist2;
             puck_x = p2_x + nx * (mallet_r + puck_r);
             puck_y = p2_y + ny * (mallet_r + puck_r);
             float impulse = pad.p2.action ? 7.2f : 5.0f;
-            puck_vx = nx * impulse;
-            puck_vy = ny * impulse;
+            puck_vx = nx * impulse; puck_vy = ny * impulse;
             play_tone(pad.p2.action ? 720.0f : 480.0f, 35);
         }
     }
 
     void render(SDL_Renderer *ren, GameMode mode) {
-        // Table Rink Outer Boundary
         SDL_Rect rink = {20, 22, SCR_W - 40, SCR_H - 44};
         set_color(ren, COL_CARD);
         SDL_RenderFillRect(ren, &rink);
         set_color(ren, COL_BORDER);
         SDL_RenderDrawRect(ren, &rink);
 
-        // Center line & circle
         SDL_RenderDrawLine(ren, SCR_W / 2, 22, SCR_W / 2, SCR_H - 22);
         draw_circle(ren, SCR_W / 2, SCR_H / 2, 35, COL_BORDER, false);
 
-        // Left Goal Box & Right Goal Box
         SDL_Rect goal1 = {16, 96, 6, 80};
         set_color(ren, COL_RED);
         SDL_RenderFillRect(ren, &goal1);
@@ -687,19 +620,15 @@ struct AirHockey {
         set_color(ren, COL_BLUE);
         SDL_RenderFillRect(ren, &goal2);
 
-        // P1 Mallet (Blue)
         draw_circle(ren, (int)p1_x, (int)p1_y, (int)mallet_r, COL_BLUE);
         draw_circle(ren, (int)p1_x, (int)p1_y, 7, COL_WHITE);
 
-        // P2 Mallet (Red)
         draw_circle(ren, (int)p2_x, (int)p2_y, (int)mallet_r, COL_RED);
         draw_circle(ren, (int)p2_x, (int)p2_y, 7, COL_WHITE);
 
-        // Puck
         draw_circle(ren, (int)puck_x, (int)puck_y, (int)puck_r, COL_WHITE);
         draw_circle(ren, (int)puck_x, (int)puck_y, 5, Color(20, 24, 40));
 
-        // Score display
         char sbuf1[16], sbuf2[16];
         snprintf(sbuf1, sizeof(sbuf1), "%d", score1);
         snprintf(sbuf2, sizeof(sbuf2), "%d", score2);
@@ -736,24 +665,21 @@ struct SpinnerWar {
         spinner_r = 15.0f;
         target_score = 3;
 
-        p1_x = arena_cx - 50.0f;
-        p1_y = arena_cy;
+        p1_x = arena_cx - 50.0f; p1_y = arena_cy;
         p1_vx = 0; p1_vy = 0; p1_rot = 0; p1_boost = 100.0f;
 
-        p2_x = arena_cx + 50.0f;
-        p2_y = arena_cy;
+        p2_x = arena_cx + 50.0f; p2_y = arena_cy;
         p2_vx = 0; p2_vy = 0; p2_rot = 0; p2_boost = 100.0f;
     }
 
     void update(const GamePadState &pad, GameMode mode, int &winner) {
         float accel = 0.35f;
 
-        // P1 Controls
         if (mode == MODE_2P_LOCAL) {
-            if (pad.p1.up)    p1_vx += accel; // Forward towards opponent
-            if (pad.p1.down)  p1_vx -= accel; // Retreat
-            if (pad.p1.left)  p1_vy -= accel; // Left (North)
-            if (pad.p1.right) p1_vy += accel; // Right (South)
+            if (pad.p1.up)    p1_vx += accel;
+            if (pad.p1.down)  p1_vx -= accel;
+            if (pad.p1.left)  p1_vy -= accel;
+            if (pad.p1.right) p1_vy += accel;
         } else {
             if (pad.p1.up)    p1_vy -= accel;
             if (pad.p1.down)  p1_vy += accel;
@@ -767,7 +693,6 @@ struct SpinnerWar {
             p1_boost += 0.5f;
         }
 
-        // P2 / AI Controls
         if (mode == MODE_1P_VS_AI) {
             float dx = p1_x - p2_x;
             float dy = p1_y - p2_y;
@@ -782,10 +707,10 @@ struct SpinnerWar {
                 p2_boost += 0.5f;
             }
         } else {
-            if (pad.p2.up)    p2_vx -= accel; // Forward towards opponent (-X)
-            if (pad.p2.down)  p2_vx += accel; // Retreat (+X)
-            if (pad.p2.left)  p2_vy += accel; // Left (+Y)
-            if (pad.p2.right) p2_vy -= accel; // Right (-Y)
+            if (pad.p2.up)    p2_vx -= accel;
+            if (pad.p2.down)  p2_vx += accel;
+            if (pad.p2.left)  p2_vy += accel;
+            if (pad.p2.right) p2_vy -= accel;
             if (pad.p2.action && p2_boost > 20.0f) {
                 p2_vx *= 1.45f; p2_vy *= 1.45f; p2_boost -= 4.0f;
                 play_tone(600.0f, 20);
@@ -794,7 +719,6 @@ struct SpinnerWar {
             }
         }
 
-        // Positions & Damping
         p1_x += p1_vx; p1_y += p1_vy;
         p2_x += p2_vx; p2_y += p2_vy;
         p1_vx *= 0.94f; p1_vy *= 0.94f;
@@ -802,54 +726,41 @@ struct SpinnerWar {
         p1_rot += 18.0f;
         p2_rot -= 18.0f;
 
-        // Mutual Spinner Collision
         float dx = p2_x - p1_x;
         float dy = p2_y - p1_y;
         float dist = sqrtf(dx * dx + dy * dy);
         if (dist < spinner_r * 2.0f && dist > 0.001f) {
-            float nx = dx / dist;
-            float ny = dy / dist;
+            float nx = dx / dist; float ny = dy / dist;
             float overlap = (spinner_r * 2.0f) - dist;
-            p1_x -= nx * overlap * 0.5f;
-            p1_y -= ny * overlap * 0.5f;
-            p2_x += nx * overlap * 0.5f;
-            p2_y += ny * overlap * 0.5f;
+            p1_x -= nx * overlap * 0.5f; p1_y -= ny * overlap * 0.5f;
+            p2_x += nx * overlap * 0.5f; p2_y += ny * overlap * 0.5f;
 
             float repulse = 6.2f;
-            p1_vx = -nx * repulse;
-            p1_vy = -ny * repulse;
-            p2_vx = nx * repulse;
-            p2_vy = ny * repulse;
+            p1_vx = -nx * repulse; p1_vy = -ny * repulse;
+            p2_vx = nx * repulse;  p2_vy = ny * repulse;
             play_tone(240.0f, 50, 1);
         }
 
-        // Ring Out / Fall Check
         float d1 = sqrtf((p1_x - arena_cx)*(p1_x - arena_cx) + (p1_y - arena_cy)*(p1_y - arena_cy));
         if (d1 > arena_r) {
-            score2++;
-            play_tone(150.0f, 200);
-            if (score2 >= target_score) winner = 2;
-            else reset(false);
+            score2++; play_tone(150.0f, 200);
+            if (score2 >= target_score) winner = 2; else reset(false);
             return;
         }
 
         float d2 = sqrtf((p2_x - arena_cx)*(p2_x - arena_cx) + (p2_y - arena_cy)*(p2_y - arena_cy));
         if (d2 > arena_r) {
-            score1++;
-            play_tone(600.0f, 200);
-            if (score1 >= target_score) winner = 1;
-            else reset(false);
+            score1++; play_tone(600.0f, 200);
+            if (score1 >= target_score) winner = 1; else reset(false);
             return;
         }
     }
 
     void render(SDL_Renderer *ren, GameMode mode) {
-        // Void backdrop with circular floating ring
         draw_circle(ren, (int)arena_cx, (int)arena_cy, (int)arena_r + 4, Color(30, 40, 70));
         draw_circle(ren, (int)arena_cx, (int)arena_cy, (int)arena_r, Color(20, 26, 50));
         draw_circle(ren, (int)arena_cx, (int)arena_cy, (int)arena_r - 18, Color(25, 34, 65), false);
 
-        // Spinner 1 (Blue with spinning blades)
         draw_circle(ren, (int)p1_x, (int)p1_y, (int)spinner_r, COL_BLUE);
         for (int i = 0; i < 3; i++) {
             float ang = (p1_rot + i * 120.0f) * 0.0174533f;
@@ -859,7 +770,6 @@ struct SpinnerWar {
             SDL_RenderDrawLine(ren, (int)p1_x, (int)p1_y, bx, by);
         }
 
-        // Spinner 2 (Red with spinning blades)
         draw_circle(ren, (int)p2_x, (int)p2_y, (int)spinner_r, COL_RED);
         for (int i = 0; i < 3; i++) {
             float ang = (p2_rot + i * 120.0f) * 0.0174533f;
@@ -869,20 +779,17 @@ struct SpinnerWar {
             SDL_RenderDrawLine(ren, (int)p2_x, (int)p2_y, bx, by);
         }
 
-        // Scores & Boost Gauges
         char sbuf1[16], sbuf2[16];
         snprintf(sbuf1, sizeof(sbuf1), "%d", score1);
         snprintf(sbuf2, sizeof(sbuf2), "%d", score2);
 
         if (mode == MODE_2P_LOCAL) {
-            // Left margin UI (facing P1)
             draw_centered_str_p1(ren, 40, SCR_H / 2, sbuf1, COL_BLUE, 3);
             draw_centered_str_p1(ren, 18, SCR_H / 2, "BOOST: L", COL_BLUE, 1);
             SDL_Rect b1 = {62, (int)(SCR_H / 2 - 25), 4, (int)(p1_boost * 0.5f)};
             set_color(ren, COL_BLUE);
             SDL_RenderFillRect(ren, &b1);
 
-            // Right margin UI (facing P2)
             draw_centered_str_p2(ren, SCR_W - 64, SCR_H / 2, sbuf2, COL_RED, 3);
             draw_centered_str_p2(ren, SCR_W - 24, SCR_H / 2, "BOOST: R", COL_RED, 1);
             SDL_Rect b2 = {SCR_W - 66, (int)(SCR_H / 2 - 25), 4, (int)(p2_boost * 0.5f)};
@@ -951,7 +858,6 @@ struct TankBattle {
     void update(const GamePadState &pad, GameMode mode, int &winner) {
         float speed = 2.4f;
 
-        // P1 Tank Controls
         float prev1_x = t1_x, prev1_y = t1_y;
         if (pad.p1.left)  t1_angle -= 0.07f;
         if (pad.p1.right) t1_angle += 0.07f;
@@ -978,7 +884,6 @@ struct TankBattle {
             play_tone(600.0f, 35, 1);
         }
 
-        // P2 Tank / AI Controls
         float prev2_x = t2_x, prev2_y = t2_y;
         if (mode == MODE_1P_VS_AI) {
             float dx = t1_x - t2_x;
@@ -1029,64 +934,45 @@ struct TankBattle {
         if (check_wall_collision(t2_x, t2_y, 11.0f)) { t2_x = prev2_x; t2_y = prev2_y; }
         if (t2_reload > 0) t2_reload--;
 
-        // Bullets Physics & Bounce
         for (auto &b : bullets) {
             if (!b.active) continue;
             b.x += b.vx;
             b.y += b.vy;
 
-            // Wall bounce
-            if (b.x <= 16 || b.x >= SCR_W - 16) {
-                b.vx = -b.vx; b.bounces++;
-                play_tone(400.0f, 15);
-            }
-            if (b.y <= 16 || b.y >= SCR_H - 16) {
-                b.vy = -b.vy; b.bounces++;
-                play_tone(400.0f, 15);
-            }
+            if (b.x <= 16 || b.x >= SCR_W - 16) { b.vx = -b.vx; b.bounces++; play_tone(400.0f, 15); }
+            if (b.y <= 16 || b.y >= SCR_H - 16) { b.vy = -b.vy; b.bounces++; play_tone(400.0f, 15); }
             for (const auto &obs : obstacles) {
                 if (b.x >= obs.x && b.x <= obs.x + obs.w && b.y >= obs.y && b.y <= obs.y + obs.h) {
-                    b.vx = -b.vx; b.vy = -b.vy; b.bounces++;
-                    play_tone(400.0f, 15);
+                    b.vx = -b.vx; b.vy = -b.vy; b.bounces++; play_tone(400.0f, 15);
                     break;
                 }
             }
 
             if (b.bounces > 2) { b.active = false; continue; }
 
-            // Hit Tank 1
             float d1 = sqrtf((b.x - t1_x)*(b.x - t1_x) + (b.y - t1_y)*(b.y - t1_y));
             if (d1 < 12.0f && (b.owner != 1 || b.bounces > 0)) {
-                b.active = false;
-                score2++;
-                play_tone(150.0f, 180, 1);
-                if (score2 >= target_score) winner = 2;
-                else reset(false);
+                b.active = false; score2++; play_tone(150.0f, 180, 1);
+                if (score2 >= target_score) winner = 2; else reset(false);
                 return;
             }
 
-            // Hit Tank 2
             float d2 = sqrtf((b.x - t2_x)*(b.x - t2_x) + (b.y - t2_y)*(b.y - t2_y));
             if (d2 < 12.0f && (b.owner != 2 || b.bounces > 0)) {
-                b.active = false;
-                score1++;
-                play_tone(650.0f, 180, 1);
-                if (score1 >= target_score) winner = 1;
-                else reset(false);
+                b.active = false; score1++; play_tone(650.0f, 180, 1);
+                if (score1 >= target_score) winner = 1; else reset(false);
                 return;
             }
         }
     }
 
     void render(SDL_Renderer *ren, GameMode mode) {
-        // Outer arena wall
         SDL_Rect arena = {14, 14, SCR_W - 28, SCR_H - 28};
         set_color(ren, COL_CARD);
         SDL_RenderFillRect(ren, &arena);
         set_color(ren, COL_BORDER);
         SDL_RenderDrawRect(ren, &arena);
 
-        // Barricades
         for (const auto &obs : obstacles) {
             set_color(ren, COL_BORDER);
             SDL_RenderFillRect(ren, &obs);
@@ -1094,23 +980,19 @@ struct TankBattle {
             SDL_RenderDrawRect(ren, &obs);
         }
 
-        // Bullets
         for (const auto &b : bullets) {
             if (!b.active) continue;
             draw_circle(ren, (int)b.x, (int)b.y, 3, COL_GOLD);
         }
 
-        // Tank 1 (Blue)
         draw_circle(ren, (int)t1_x, (int)t1_y, 10, COL_BLUE);
         set_color(ren, COL_WHITE);
         SDL_RenderDrawLine(ren, (int)t1_x, (int)t1_y, (int)(t1_x + cosf(t1_angle) * 14.0f), (int)(t1_y + sinf(t1_angle) * 14.0f));
 
-        // Tank 2 (Red)
         draw_circle(ren, (int)t2_x, (int)t2_y, 10, COL_RED);
         set_color(ren, COL_WHITE);
         SDL_RenderDrawLine(ren, (int)t2_x, (int)t2_y, (int)(t2_x + cosf(t2_angle) * 14.0f), (int)(t2_y + sinf(t2_angle) * 14.0f));
 
-        // Scores
         char sbuf1[16], sbuf2[16];
         snprintf(sbuf1, sizeof(sbuf1), "%d", score1);
         snprintf(sbuf2, sizeof(sbuf2), "%d", score2);
@@ -1128,6 +1010,624 @@ struct TankBattle {
     }
 };
 
+/* ─── 5. CHECKERS MINIGAME (DAMA) ────────────────────────────────────── */
+
+struct CheckersMove {
+    int r1, c1, r2, c2;
+    int cap_r, cap_c;
+};
+
+struct CheckersGame {
+    int board[8][8]; // 0=empty, 1=P1 man, 2=P1 king, -1=P2 man, -2=P2 king
+    int turn; // 1 (P1 Blue) or -1 (P2 Red)
+    int cursor_r, cursor_c;
+    int selected_r, selected_c;
+    int p1_score, p2_score;
+    int input_delay;
+    int ai_delay;
+
+    void reset(bool reset_match = true) {
+        if (reset_match) { p1_score = 0; p2_score = 0; }
+        turn = 1;
+        cursor_r = 5; cursor_c = 2;
+        selected_r = -1; selected_c = -1;
+        input_delay = 0;
+        ai_delay = 0;
+
+        memset(board, 0, sizeof(board));
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 8; c++) {
+                if ((r + c) % 2 == 1) board[r][c] = -1;
+            }
+        }
+        for (int r = 5; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if ((r + c) % 2 == 1) board[r][c] = 1;
+            }
+        }
+    }
+
+    std::vector<CheckersMove> get_moves(int player) {
+        std::vector<CheckersMove> reg_m;
+        std::vector<CheckersMove> cap_m;
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                int p = board[r][c];
+                if ((player == 1 && p > 0) || (player == -1 && p < 0)) {
+                    bool is_king = (abs(p) == 2);
+                    int drs[4] = {-1, -1, 1, 1};
+                    int dcs[4] = {-1, 1, -1, 1};
+                    for (int d = 0; d < 4; d++) {
+                        int dr = drs[d];
+                        int dc = dcs[d];
+                        if (!is_king) {
+                            if (player == 1 && dr > 0) continue;
+                            if (player == -1 && dr < 0) continue;
+                        }
+                        int nr = r + dr;
+                        int nc = c + dc;
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                            if (board[nr][nc] == 0) {
+                                reg_m.push_back({r, c, nr, nc, -1, -1});
+                            } else if ((player == 1 && board[nr][nc] < 0) || (player == -1 && board[nr][nc] > 0)) {
+                                int jr = nr + dr;
+                                int jc = nc + dc;
+                                if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc] == 0) {
+                                    cap_m.push_back({r, c, jr, jc, nr, nc});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return cap_m.empty() ? reg_m : cap_m;
+    }
+
+    void execute_move(const CheckersMove &m) {
+        int piece = board[m.r1][m.c1];
+        board[m.r1][m.c1] = 0;
+
+        if (piece == 1 && m.r2 == 0) piece = 2;
+        if (piece == -1 && m.r2 == 7) piece = -2;
+        board[m.r2][m.c2] = piece;
+
+        if (m.cap_r != -1) {
+            board[m.cap_r][m.cap_c] = 0;
+            if (turn == 1) p1_score++;
+            else p2_score++;
+            play_tone(640.0f, 40, 1);
+        } else {
+            play_tone(460.0f, 25);
+        }
+
+        selected_r = -1;
+        selected_c = -1;
+        turn = -turn;
+    }
+
+    void update(const GamePadState &pad, GameMode mode, int &winner) {
+        if (input_delay > 0) input_delay--;
+
+        int p1_cnt = 0, p2_cnt = 0;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if (board[r][c] > 0) p1_cnt++;
+                if (board[r][c] < 0) p2_cnt++;
+            }
+        }
+        if (p2_cnt == 0) { winner = 1; return; }
+        if (p1_cnt == 0) { winner = 2; return; }
+
+        if (turn == -1 && mode == MODE_1P_VS_AI) {
+            ai_delay++;
+            if (ai_delay > 25) {
+                ai_delay = 0;
+                std::vector<CheckersMove> moves = get_moves(-1);
+                if (moves.empty()) { winner = 1; return; }
+
+                int best_i = 0, best_s = -9999;
+                for (size_t i = 0; i < moves.size(); i++) {
+                    int s = 0;
+                    if (moves[i].cap_r != -1) s += 100;
+                    if (moves[i].r2 == 7) s += 50;
+                    s += (3 - abs(moves[i].c2 - 3));
+                    if (s > best_s) { best_s = s; best_i = (int)i; }
+                }
+                execute_move(moves[best_i]);
+            }
+            return;
+        }
+
+        bool u = false, d = false, l = false, r = false, act = false;
+        if (turn == 1) {
+            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
+        } else {
+            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
+        }
+
+        if (input_delay == 0) {
+            if (u) { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            else if (d) { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            else if (l) { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            else if (r) { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+        }
+
+        if (act && input_delay == 0) {
+            input_delay = 12;
+            std::vector<CheckersMove> all_m = get_moves(turn);
+
+            if (selected_r != -1) {
+                bool found = false;
+                for (const auto &m : all_m) {
+                    if (m.r1 == selected_r && m.c1 == selected_c && m.r2 == cursor_r && m.c2 == cursor_c) {
+                        execute_move(m);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    int p = board[cursor_r][cursor_c];
+                    if ((turn == 1 && p > 0) || (turn == -1 && p < 0)) {
+                        selected_r = cursor_r;
+                        selected_c = cursor_c;
+                        play_tone(540.0f, 25);
+                    } else {
+                        selected_r = -1;
+                        selected_c = -1;
+                        play_tone(240.0f, 30);
+                    }
+                }
+            } else {
+                int p = board[cursor_r][cursor_c];
+                if ((turn == 1 && p > 0) || (turn == -1 && p < 0)) {
+                    selected_r = cursor_r;
+                    selected_c = cursor_c;
+                    play_tone(540.0f, 25);
+                }
+            }
+        }
+    }
+
+    void render(SDL_Renderer *ren, GameMode mode) {
+        int bx = 128, by = 24;
+        int sz = 28;
+
+        SDL_Rect frame = {bx - 3, by - 3, sz * 8 + 6, sz * 8 + 6};
+        set_color(ren, Color(35, 45, 65));
+        SDL_RenderFillRect(ren, &frame);
+        set_color(ren, COL_BORDER);
+        SDL_RenderDrawRect(ren, &frame);
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                SDL_Rect sq = {bx + c * sz, by + r * sz, sz, sz};
+                bool is_dark = ((r + c) % 2 == 1);
+                set_color(ren, is_dark ? Color(70, 95, 130) : Color(220, 215, 195));
+                SDL_RenderFillRect(ren, &sq);
+
+                if (r == selected_r && c == selected_c) {
+                    set_color(ren, Color(50, 160, 100));
+                    SDL_RenderFillRect(ren, &sq);
+                }
+
+                int p = board[r][c];
+                if (p != 0) {
+                    int cx = bx + c * sz + sz / 2;
+                    int cy = by + r * sz + sz / 2;
+                    Color pcol = (p > 0) ? COL_BLUE : COL_RED;
+                    draw_circle(ren, cx, cy, 10, pcol);
+                    draw_circle(ren, cx, cy, 10, COL_WHITE, false);
+                    if (abs(p) == 2) {
+                        draw_circle(ren, cx, cy, 4, COL_GOLD);
+                        draw_char(ren, cx - 4, cy - 4, 'K', COL_WHITE, 1);
+                    }
+                }
+            }
+        }
+
+        if (selected_r != -1) {
+            std::vector<CheckersMove> m = get_moves(turn);
+            for (const auto &mv : m) {
+                if (mv.r1 == selected_r && mv.c1 == selected_c) {
+                    int cx = bx + mv.c2 * sz + sz / 2;
+                    int cy = by + mv.r2 * sz + sz / 2;
+                    if (mv.cap_r != -1) {
+                        draw_circle(ren, cx, cy, 11, COL_RED, false);
+                    } else {
+                        draw_circle(ren, cx, cy, 4, COL_GOLD);
+                    }
+                }
+            }
+        }
+
+        SDL_Rect cur = {bx + cursor_c * sz - 1, by + cursor_r * sz - 1, sz + 2, sz + 2};
+        set_color(ren, COL_GOLD);
+        SDL_RenderDrawRect(ren, &cur);
+
+        char c1buf[16], c2buf[16];
+        snprintf(c1buf, sizeof(c1buf), "CAPT: %d", p1_score);
+        snprintf(c2buf, sizeof(c2buf), "CAPT: %d", p2_score);
+
+        if (mode == MODE_2P_LOCAL) {
+            draw_centered_str_p1(ren, 20, SCR_H / 2, "PLAYER 1", COL_BLUE, 1);
+            draw_centered_str_p1(ren, 45, SCR_H / 2, (turn == 1 ? "YOUR TURN" : "WAITING"), (turn == 1 ? COL_GOLD : COL_DIM), 1);
+            draw_centered_str_p1(ren, 75, SCR_H / 2, c1buf, COL_WHITE, 1);
+
+            draw_centered_str_p2(ren, SCR_W - 20, SCR_H / 2, "PLAYER 2", COL_RED, 1);
+            draw_centered_str_p2(ren, SCR_W - 45, SCR_H / 2, (turn == -1 ? "YOUR TURN" : "WAITING"), (turn == -1 ? COL_GOLD : COL_DIM), 1);
+            draw_centered_str_p2(ren, SCR_W - 75, SCR_H / 2, c2buf, COL_WHITE, 1);
+        } else {
+            draw_str(ren, 12, 40, "PLAYER 1", COL_BLUE, 1);
+            draw_str(ren, 12, 60, (turn == 1 ? "YOUR TURN" : "WAITING"), (turn == 1 ? COL_GOLD : COL_DIM), 1);
+            draw_str(ren, 12, 85, c1buf, COL_WHITE, 1);
+
+            draw_str(ren, SCR_W - 110, 40, "CPU (AI)", COL_RED, 1);
+            draw_str(ren, SCR_W - 110, 60, (turn == -1 ? "THINKING" : "WAITING"), (turn == -1 ? COL_GOLD : COL_DIM), 1);
+            draw_str(ren, SCR_W - 110, 85, c2buf, COL_WHITE, 1);
+        }
+    }
+};
+
+/* ─── 6. CHESS MINIGAME ──────────────────────────────────────────────── */
+
+struct ChessMove {
+    int r1, c1, r2, c2;
+    int captured;
+};
+
+struct ChessGame {
+    int board[8][8]; // 1:P, 2:N, 3:B, 4:R, 5:Q, 6:K (+P1, -P2)
+    int turn; // 1 (P1 Blue) or -1 (P2 Red)
+    int cursor_r, cursor_c;
+    int selected_r, selected_c;
+    int p1_score, p2_score;
+    int input_delay;
+    int ai_delay;
+
+    void reset(bool reset_match = true) {
+        if (reset_match) { p1_score = 0; p2_score = 0; }
+        turn = 1;
+        cursor_r = 6; cursor_c = 4;
+        selected_r = -1; selected_c = -1;
+        input_delay = 0;
+        ai_delay = 0;
+
+        memset(board, 0, sizeof(board));
+        int rank0[8] = {-4, -2, -3, -5, -6, -3, -2, -4};
+        for (int c = 0; c < 8; c++) {
+            board[0][c] = rank0[c];
+            board[1][c] = -1;
+            board[6][c] = 1;
+            board[7][c] = -rank0[c];
+        }
+    }
+
+    bool is_in_check(int player) {
+        int kr = -1, kc = -1;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if (board[r][c] == player * 6) { kr = r; kc = c; break; }
+            }
+        }
+        if (kr == -1) return true;
+
+        int enemy = -player;
+        int pawn_dr = (enemy == 1) ? -1 : 1;
+        for (int dc = -1; dc <= 1; dc += 2) {
+            int pr = kr - pawn_dr, pc = kc + dc;
+            if (pr >= 0 && pr < 8 && pc >= 0 && pc < 8) {
+                if (board[pr][pc] == enemy * 1) return true;
+            }
+        }
+
+        int kn_drs[8] = {-2,-2,-1,-1,1,1,2,2};
+        int kn_dcs[8] = {-1,1,-2,2,-2,2,-1,1};
+        for (int i = 0; i < 8; i++) {
+            int nr = kr + kn_drs[i], nc = kc + kn_dcs[i];
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                if (board[nr][nc] == enemy * 2) return true;
+            }
+        }
+
+        int dirs[8][2] = {{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{-1,1},{1,-1},{1,1}};
+        for (int d = 0; d < 8; d++) {
+            int dr = dirs[d][0], dc = dirs[d][1];
+            bool is_diag = (dr != 0 && dc != 0);
+            for (int step = 1; step < 8; step++) {
+                int nr = kr + dr * step, nc = kc + dc * step;
+                if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                int p = board[nr][nc];
+                if (p != 0) {
+                    if (p * enemy > 0) {
+                        int type = abs(p);
+                        if (type == 5) return true;
+                        if (!is_diag && type == 4) return true;
+                        if (is_diag && type == 3) return true;
+                        if (step == 1 && type == 6) return true;
+                    }
+                    break;
+                }
+            }
+        }
+        return false;
+    }
+
+    std::vector<ChessMove> get_legal_moves(int player) {
+        std::vector<ChessMove> moves;
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                int p = board[r][c];
+                if (p * player <= 0) continue;
+                int type = abs(p);
+
+                if (type == 1) { // Pawn
+                    int dr = (player == 1) ? -1 : 1;
+                    int nr = r + dr;
+                    if (nr >= 0 && nr < 8 && board[nr][c] == 0) {
+                        moves.push_back({r, c, nr, c, 0});
+                        int start_r = (player == 1) ? 6 : 1;
+                        int n2r = r + 2 * dr;
+                        if (r == start_r && board[n2r][c] == 0) {
+                            moves.push_back({r, c, n2r, c, 0});
+                        }
+                    }
+                    for (int dc = -1; dc <= 1; dc += 2) {
+                        int nc = c + dc;
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                            if (board[nr][nc] * player < 0) {
+                                moves.push_back({r, c, nr, nc, board[nr][nc]});
+                            }
+                        }
+                    }
+                } else if (type == 2) { // Knight
+                    int drs[8] = {-2,-2,-1,-1,1,1,2,2};
+                    int dcs[8] = {-1,1,-2,2,-2,2,-1,1};
+                    for (int i = 0; i < 8; i++) {
+                        int nr = r + drs[i], nc = c + dcs[i];
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                            if (board[nr][nc] * player <= 0) {
+                                moves.push_back({r, c, nr, nc, board[nr][nc]});
+                            }
+                        }
+                    }
+                } else if (type == 3 || type == 4 || type == 5) { // Slider
+                    int start_d = (type == 3 ? 4 : 0);
+                    int end_d   = (type == 4 ? 4 : 8);
+                    int dirs[8][2] = {{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{-1,1},{1,-1},{1,1}};
+                    for (int d = start_d; d < end_d; d++) {
+                        int dr = dirs[d][0], dc = dirs[d][1];
+                        for (int step = 1; step < 8; step++) {
+                            int nr = r + dr * step, nc = c + dc * step;
+                            if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                            if (board[nr][nc] == 0) {
+                                moves.push_back({r, c, nr, nc, 0});
+                            } else {
+                                if (board[nr][nc] * player < 0) moves.push_back({r, c, nr, nc, board[nr][nc]});
+                                break;
+                            }
+                        }
+                    }
+                } else if (type == 6) { // King
+                    int dirs[8][2] = {{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{-1,1},{1,-1},{1,1}};
+                    for (int d = 0; d < 8; d++) {
+                        int nr = r + dirs[d][0], nc = c + dirs[d][1];
+                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                            if (board[nr][nc] * player <= 0) moves.push_back({r, c, nr, nc, board[nr][nc]});
+                        }
+                    }
+                }
+            }
+        }
+
+        std::vector<ChessMove> strictly_legal;
+        for (const auto &m : moves) {
+            int src = board[m.r1][m.c1];
+            int dst = board[m.r2][m.c2];
+            board[m.r1][m.c1] = 0;
+            board[m.r2][m.c2] = src;
+            if (!is_in_check(player)) strictly_legal.push_back(m);
+            board[m.r1][m.c1] = src;
+            board[m.r2][m.c2] = dst;
+        }
+        return strictly_legal;
+    }
+
+    void execute_move(const ChessMove &m) {
+        int src = board[m.r1][m.c1];
+        int dst = board[m.r2][m.c2];
+        board[m.r1][m.c1] = 0;
+
+        if (abs(src) == 1 && (m.r2 == 0 || m.r2 == 7)) {
+            src = (src > 0) ? 5 : -5;
+        }
+        board[m.r2][m.c2] = src;
+
+        if (dst != 0) {
+            if (turn == 1) p1_score += abs(dst);
+            else p2_score += abs(dst);
+            play_tone(660.0f, 40, 1);
+        } else {
+            play_tone(440.0f, 25);
+        }
+
+        selected_r = -1; selected_c = -1;
+        turn = -turn;
+        if (is_in_check(turn)) play_tone(250.0f, 80);
+    }
+
+    int evaluate_board() {
+        int score = 0;
+        static const int val_tab[7] = {0, 100, 320, 330, 500, 900, 20000};
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                int p = board[r][c];
+                if (p == 0) continue;
+                int type = abs(p);
+                int v = val_tab[type];
+                v += (3 - abs(c - 3)) * 2;
+                if (p > 0) score += v; else score -= v;
+            }
+        }
+        return score;
+    }
+
+    void update(const GamePadState &pad, GameMode mode, int &winner) {
+        if (input_delay > 0) input_delay--;
+
+        std::vector<ChessMove> legal = get_legal_moves(turn);
+        if (legal.empty()) {
+            winner = (turn == 1) ? 2 : 1;
+            return;
+        }
+
+        if (turn == -1 && mode == MODE_1P_VS_AI) {
+            ai_delay++;
+            if (ai_delay > 25) {
+                ai_delay = 0;
+                int best_i = 0, best_s = 999999;
+                for (size_t i = 0; i < legal.size(); i++) {
+                    const auto &m = legal[i];
+                    int s1 = board[m.r1][m.c1], s2 = board[m.r2][m.c2];
+                    board[m.r1][m.c1] = 0;
+                    board[m.r2][m.c2] = s1;
+                    int sc = evaluate_board();
+                    board[m.r1][m.c1] = s1;
+                    board[m.r2][m.c2] = s2;
+                    if (sc < best_s) { best_s = sc; best_i = (int)i; }
+                }
+                execute_move(legal[best_i]);
+            }
+            return;
+        }
+
+        bool u = false, d = false, l = false, r = false, act = false;
+        if (turn == 1) {
+            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
+        } else {
+            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
+        }
+
+        if (input_delay == 0) {
+            if (u) { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            else if (d) { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            else if (l) { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            else if (r) { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+        }
+
+        if (act && input_delay == 0) {
+            input_delay = 12;
+            if (selected_r != -1) {
+                bool found = false;
+                for (const auto &m : legal) {
+                    if (m.r1 == selected_r && m.c1 == selected_c && m.r2 == cursor_r && m.c2 == cursor_c) {
+                        execute_move(m);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    int p = board[cursor_r][cursor_c];
+                    if (p * turn > 0) {
+                        selected_r = cursor_r; selected_c = cursor_c; play_tone(540.0f, 25);
+                    } else {
+                        selected_r = -1; selected_c = -1; play_tone(240.0f, 30);
+                    }
+                }
+            } else {
+                int p = board[cursor_r][cursor_c];
+                if (p * turn > 0) {
+                    selected_r = cursor_r; selected_c = cursor_c; play_tone(540.0f, 25);
+                }
+            }
+        }
+    }
+
+    void render(SDL_Renderer *ren, GameMode mode) {
+        int bx = 128, by = 24;
+        int sz = 28;
+
+        SDL_Rect frame = {bx - 3, by - 3, sz * 8 + 6, sz * 8 + 6};
+        set_color(ren, Color(35, 45, 65));
+        SDL_RenderFillRect(ren, &frame);
+        set_color(ren, COL_BORDER);
+        SDL_RenderDrawRect(ren, &frame);
+
+        static const char p_names[7] = {' ', 'P', 'N', 'B', 'R', 'Q', 'K'};
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                SDL_Rect sq = {bx + c * sz, by + r * sz, sz, sz};
+                bool is_dark = ((r + c) % 2 == 1);
+                set_color(ren, is_dark ? Color(70, 95, 130) : Color(220, 215, 195));
+                SDL_RenderFillRect(ren, &sq);
+
+                if (r == selected_r && c == selected_c) {
+                    set_color(ren, Color(50, 160, 100));
+                    SDL_RenderFillRect(ren, &sq);
+                }
+
+                int p = board[r][c];
+                if (p != 0) {
+                    int cx = bx + c * sz + sz / 2;
+                    int cy = by + r * sz + sz / 2;
+                    Color pcol = (p > 0) ? COL_BLUE : COL_RED;
+                    draw_circle(ren, cx, cy, 11, pcol);
+                    draw_circle(ren, cx, cy, 11, COL_WHITE, false);
+                    draw_char(ren, cx - 4, cy - 4, p_names[abs(p)], (abs(p) >= 5 ? COL_GOLD : COL_WHITE), 1);
+                }
+            }
+        }
+
+        if (selected_r != -1) {
+            std::vector<ChessMove> m = get_legal_moves(turn);
+            for (const auto &mv : m) {
+                if (mv.r1 == selected_r && mv.c1 == selected_c) {
+                    int cx = bx + mv.c2 * sz + sz / 2;
+                    int cy = by + mv.r2 * sz + sz / 2;
+                    if (mv.captured != 0) {
+                        draw_circle(ren, cx, cy, 11, COL_RED, false);
+                    } else {
+                        draw_circle(ren, cx, cy, 4, COL_GOLD);
+                    }
+                }
+            }
+        }
+
+        SDL_Rect cur = {bx + cursor_c * sz - 1, by + cursor_r * sz - 1, sz + 2, sz + 2};
+        set_color(ren, COL_GOLD);
+        SDL_RenderDrawRect(ren, &cur);
+
+        char c1buf[16], c2buf[16];
+        snprintf(c1buf, sizeof(c1buf), "SCORE: %d", p1_score);
+        snprintf(c2buf, sizeof(c2buf), "SCORE: %d", p2_score);
+
+        if (mode == MODE_2P_LOCAL) {
+            draw_centered_str_p1(ren, 20, SCR_H / 2, "PLAYER 1", COL_BLUE, 1);
+            draw_centered_str_p1(ren, 45, SCR_H / 2, (turn == 1 ? "YOUR TURN" : "WAITING"), (turn == 1 ? COL_GOLD : COL_DIM), 1);
+            draw_centered_str_p1(ren, 75, SCR_H / 2, c1buf, COL_WHITE, 1);
+            if (is_in_check(1)) draw_centered_str_p1(ren, 100, SCR_H / 2, "CHECK!", COL_RED, 2);
+
+            draw_centered_str_p2(ren, SCR_W - 20, SCR_H / 2, "PLAYER 2", COL_RED, 1);
+            draw_centered_str_p2(ren, SCR_W - 45, SCR_H / 2, (turn == -1 ? "YOUR TURN" : "WAITING"), (turn == -1 ? COL_GOLD : COL_DIM), 1);
+            draw_centered_str_p2(ren, SCR_W - 75, SCR_H / 2, c2buf, COL_WHITE, 1);
+            if (is_in_check(-1)) draw_centered_str_p2(ren, SCR_W - 100, SCR_H / 2, "CHECK!", COL_RED, 2);
+        } else {
+            draw_str(ren, 12, 40, "PLAYER 1", COL_BLUE, 1);
+            draw_str(ren, 12, 60, (turn == 1 ? "YOUR TURN" : "WAITING"), (turn == 1 ? COL_GOLD : COL_DIM), 1);
+            draw_str(ren, 12, 85, c1buf, COL_WHITE, 1);
+            if (is_in_check(1)) draw_str(ren, 12, 110, "CHECK!", COL_RED, 2);
+
+            draw_str(ren, SCR_W - 110, 40, "CPU (AI)", COL_RED, 1);
+            draw_str(ren, SCR_W - 110, 60, (turn == -1 ? "THINKING" : "WAITING"), (turn == -1 ? COL_GOLD : COL_DIM), 1);
+            draw_str(ren, SCR_W - 110, 85, c2buf, COL_WHITE, 1);
+            if (is_in_check(-1)) draw_str(ren, SCR_W - 110, 110, "CHECK!", COL_RED, 2);
+        }
+    }
+};
+
 /* ─── APP INSTANCE & MENU ────────────────────────────────────────────── */
 
 struct App {
@@ -1141,6 +1641,8 @@ struct App {
     AirHockey airhockey;
     SpinnerWar spinners;
     TankBattle tanks;
+    CheckersGame checkers;
+    ChessGame chess;
 
     void init() {
         state = STATE_MENU;
@@ -1157,12 +1659,13 @@ struct App {
         if (selected_game == GAME_AIRHOCKEY) airhockey.reset(true);
         if (selected_game == GAME_SPINNERS)  spinners.reset(true);
         if (selected_game == GAME_TANKS)     tanks.reset(true);
+        if (selected_game == GAME_CHECKERS)  checkers.reset(true);
+        if (selected_game == GAME_CHESS)     chess.reset(true);
     }
 
     void update(const GamePadState &pad) {
         if (state == STATE_MENU) {
             static int rep = 0;
-            // Allow browsing using D-Pad Left/Right or Shape Buttons
             bool left_req  = pad.p1.left  || pad.p2.left  || ((pad_curr.Buttons & PSP_CTRL_LEFT) != 0);
             bool right_req = pad.p1.right || pad.p2.right || ((pad_curr.Buttons & PSP_CTRL_RIGHT) != 0);
 
@@ -1184,13 +1687,11 @@ struct App {
                 rep = 0;
             }
 
-            // Mode Toggle via SELECT
             if (pad.select_pressed) {
                 mode = (mode == MODE_1P_VS_AI) ? MODE_2P_LOCAL : MODE_1P_VS_AI;
                 play_tone(580.0f, 30);
             }
 
-            // Start Game via Action, Cross, Circle, or Start
             bool start_req = pad.p1.action || pad.p2.action || pad.start_pressed ||
                              ((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) != 0);
             if (start_req) {
@@ -1212,6 +1713,8 @@ struct App {
             if (selected_game == GAME_AIRHOCKEY) airhockey.update(pad, mode, winner);
             if (selected_game == GAME_SPINNERS)  spinners.update(pad, mode, winner);
             if (selected_game == GAME_TANKS)     tanks.update(pad, mode, winner);
+            if (selected_game == GAME_CHECKERS)  checkers.update(pad, mode, winner);
+            if (selected_game == GAME_CHESS)     chess.update(pad, mode, winner);
 
             if (winner != 0) {
                 state = STATE_GAMEOVER;
@@ -1237,24 +1740,26 @@ struct App {
 
     void render(SDL_Renderer *ren) {
         if (state == STATE_MENU) {
-            // Header Title
             draw_centered_str(ren, SCR_W / 2 + 1, 19, "2 PLAYER GAMES", COL_SHADOW, 3);
             draw_centered_str(ren, SCR_W / 2, 18, "2 PLAYER GAMES", COL_GOLD, 3);
             draw_centered_str(ren, SCR_W / 2, 46, "THE CHALLENGE - PSP EDITION", COL_DIM, 1);
 
-            // Minigames Carousel Cards
-            const char *games[GAME_COUNT] = {"PING PONG", "AIR HOCKEY", "SPINNER WAR", "TANK BATTLE"};
+            const char *games[GAME_COUNT] = {
+                "PING PONG", "AIR HOCKEY", "SPINNERS", "TANKS", "CHECKERS", "CHESS"
+            };
             const char *descs[GAME_COUNT] = {
                 "CLASSIC PADDLE RALLY BATTLE",
                 "2D AIR HOCKEY TABLE & SMASHES",
                 "BEYBLADE SUMO RING KNOCKOUT",
-                "TACTICAL BOUNCING SHELL COMBAT"
+                "TACTICAL BOUNCING SHELL COMBAT",
+                "CLASSIC 8x8 DAMA & KING CROWNS",
+                "TACTICAL ROYAL BOARD CHECKMATE"
             };
 
             for (int i = 0; i < GAME_COUNT; i++) {
-                int cx = 20 + i * 112;
+                int cx = 16 + i * 76;
                 int cy = 88;
-                int cw = 104;
+                int cw = 68;
                 int ch = 76;
 
                 if (i == menu_cursor) {
@@ -1277,7 +1782,6 @@ struct App {
 
             draw_centered_str(ren, SCR_W / 2, 174, descs[menu_cursor], COL_WHITE, 1);
 
-            // Mode Selector Pill
             int mode_y = 196;
             SDL_Rect mode_pill = {SCR_W / 2 - 135, mode_y, 270, 24};
             set_color(ren, COL_CARD);
@@ -1288,7 +1792,6 @@ struct App {
             const char *mstr = (mode == MODE_1P_VS_AI) ? "< MODE: 1 PLAYER (VS AI) >" : "< MODE: 2 PLAYERS (SPLIT OPPS) >";
             draw_centered_str(ren, SCR_W / 2, mode_y + 8, mstr, COL_GOLD, 1);
 
-            // Control scheme instructions per mode
             if (mode == MODE_1P_VS_AI) {
                 draw_centered_str(ren, SCR_W / 2, 232, "P1 (LEFT): D-PAD + L / X  |  VS AI CPU", COL_DIM, 1);
             } else {
@@ -1301,13 +1804,14 @@ struct App {
             if (selected_game == GAME_AIRHOCKEY) airhockey.render(ren, mode);
             if (selected_game == GAME_SPINNERS)  spinners.render(ren, mode);
             if (selected_game == GAME_TANKS)     tanks.render(ren, mode);
+            if (selected_game == GAME_CHECKERS)  checkers.render(ren, mode);
+            if (selected_game == GAME_CHESS)     chess.render(ren, mode);
 
             if (mode == MODE_1P_VS_AI) {
                 draw_str(ren, 16, 6, "P1 (BLUE)", COL_BLUE, 1);
                 draw_centered_str(ren, SCR_W / 2, 6, "1P VS AI", COL_DIM, 1);
                 draw_str(ren, SCR_W - 88, 6, "CPU (RED)", COL_RED, 1);
             } else {
-                // In 2P mode, center dividing tick on top and bottom border
                 set_color(ren, COL_BORDER);
                 SDL_RenderDrawLine(ren, SCR_W / 2, 0, SCR_W / 2, 8);
                 SDL_RenderDrawLine(ren, SCR_W / 2, SCR_H - 8, SCR_W / 2, SCR_H);
@@ -1319,9 +1823,10 @@ struct App {
             if (selected_game == GAME_AIRHOCKEY) airhockey.render(ren, mode);
             if (selected_game == GAME_SPINNERS)  spinners.render(ren, mode);
             if (selected_game == GAME_TANKS)     tanks.render(ren, mode);
+            if (selected_game == GAME_CHECKERS)  checkers.render(ren, mode);
+            if (selected_game == GAME_CHESS)     chess.render(ren, mode);
 
             if (mode == MODE_2P_LOCAL) {
-                // Dual rotated pause boxes facing each player
                 SDL_Rect pop1 = {40, SCR_H / 2 - 40, 160, 80};
                 set_color(ren, COL_CARD);
                 SDL_RenderFillRect(ren, &pop1);
@@ -1353,11 +1858,9 @@ struct App {
 
         } else if (state == STATE_GAMEOVER) {
             if (mode == MODE_2P_LOCAL) {
-                // Center dividing line between player zones
                 set_color(ren, COL_BORDER);
                 SDL_RenderDrawLine(ren, SCR_W / 2, 20, SCR_W / 2, SCR_H - 20);
 
-                // Player 1 Result Box (facing West/P1)
                 SDL_Rect pop1 = {30, SCR_H / 2 - 55, 180, 110};
                 set_color(ren, COL_CARD);
                 SDL_RenderFillRect(ren, &pop1);
@@ -1373,7 +1876,6 @@ struct App {
                 }
                 draw_centered_str_p1(ren, 70, SCR_H / 2, "PRESS L TO RETRY", COL_WHITE, 1);
 
-                // Player 2 Result Box (facing East/P2)
                 SDL_Rect pop2 = {270, SCR_H / 2 - 55, 180, 110};
                 set_color(ren, COL_CARD);
                 SDL_RenderFillRect(ren, &pop2);
@@ -1438,7 +1940,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Audio Setup
     SDL_AudioSpec want, have;
     SDL_zero(want);
     want.freq = 22050;

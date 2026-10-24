@@ -2,7 +2,7 @@
 
 A native C++11 and SDL2 Sony PlayStation Portable (PSP) homebrew port of the hit local multiplayer party game **"2 Player Games: The Challenge"** (originally by JindoBlu). 
 
-Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 12MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine.
+Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 12MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across 6 flagship minigames.
 
 <p align="center">
   <img src="screenshot.png" alt="2 Player Games PSP Edition" width="760"/>
@@ -22,19 +22,26 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 | <img src="screenshot_spinners.png" alt="Spinner War" width="460"/> | <img src="screenshot_tanks.png" alt="Tank Battle" width="460"/> |
 | *Rotating top collisions, ring-out physics & Turbo Boost* | *Ricocheting cannon shells & obstacle barricades* |
 
-| **5. Main Menu (Card Carousel)** | **6. Dual-Facing Match Over** |
+| **5. Checkers (Dama)** | **6. Chess (Royal Tactics)** |
+|:---:|:---:|
+| <img src="screenshot_checkers.png" alt="Checkers" width="460"/> | <img src="screenshot_chess.png" alt="Chess" width="460"/> |
+| *8×8 board, diagonal steps, jump captures & King crowns* | *Full piece set, ray validation, checks & smart AI* |
+
+| **7. Main Menu (6-Game Carousel)** | **8. Dual-Facing Match Over** |
 |:---:|:---:|
 | <img src="screenshot_menu.png" alt="Main Menu" width="460"/> | <img src="screenshot_gameover.png" alt="Game Over" width="460"/> |
-| *Minigame carousel cards & split controls reminder* | *Dual rotated victory cards facing each player's controls* |
+| *6 minigame cards & hardware controls reminder* | *Dual rotated victory cards facing each player's controls* |
 
 ---
 
-## Minigame Collection
+## Minigame Collection (6 Games)
 
 1. **Ping Pong (Table Tennis):** Classic paddle rally battle with dynamic deflection angle physics and escalating volley velocity. First to 5 points wins.
 2. **Air Hockey:** Full 2D arena hockey table with circular mallet and puck collision physics, boundary rebounds, goal pockets, and high-velocity smash strikes. First to 5 goals wins.
 3. **Spinner War (Beyblade Sumo):** Floating circular ring arena battle. Steer high-torque spinning tops with blade collision impulses and Turbo Boost charges to knock the opponent into the void. First to 3 knockouts wins.
 4. **Tank Battle:** Tactical battlefield with 6 brick barricades. Navigate top-down tanks and fire ricocheting cannon shells that bounce off perimeter and obstacle walls. First to 5 kills wins.
+5. **Checkers (Dama):** Authentic 8×8 tournament checkers. Forward diagonal strides, mandatory jump captures over opponent pieces, and crowning Kings upon reaching the baseline.
+6. **Chess:** Complete royal strategy chess featuring Pawns, Knights, Bishops, Rooks, Queens, and Kings. Strict check detection, piece-square evaluation AI, and promotion mechanics.
 
 ---
 
@@ -65,8 +72,8 @@ In 2-Player mode, the PSP is placed between both players on a flat surface or he
 
 #### Dual Facing In-Game UI
 To deliver an authentic tabletop multiplayer experience, the HUD dynamically re-orients itself:
-- **Player 1's HUD:** Scores, player labels, boost gauges, and end-game match results ("YOU WIN!" / "YOU LOSE") are rendered facing West so Player 1 reads them completely upright without tilting their head.
-- **Player 2's HUD:** Scores, player labels, boost gauges, and end-game match results are rendered facing East so Player 2 reads them completely upright from their seat.
+- **Player 1's HUD:** Scores, player labels, boost gauges, turn alerts, and end-game match results ("YOU WIN!" / "YOU LOSE") are rendered facing West so Player 1 reads them completely upright without tilting their head.
+- **Player 2's HUD:** Scores, player labels, boost gauges, turn alerts, and end-game match results are rendered facing East so Player 2 reads them completely upright from their seat.
 
 ---
 
@@ -75,9 +82,14 @@ To deliver an authentic tabletop multiplayer experience, the HUD dynamically re-
 In 1-Player mode, the console is held in the standard landscape orientation:
 - **Player 1 (Left Side):**
   - **D-Pad / Analog Nub:** Standard Directional movement (Up, Down, Left, Right).
-  - **L Trigger / Cross:** Action / Turbo Boost / Cannon Fire.
-- **Player 2 (AI Engine):** Fully autonomous algorithmic opponent.
+  - **L Trigger / Cross:** Action / Turbo Boost / Select / Confirm.
+- **Player 2 (AI Engine):** Autonomous algorithmic opponent.
 - **UI:** Standard horizontal top bar HUD and centered victory modal.
+
+### Board Games Cursor Controls (Chess & Checkers)
+- **D-Pad / Shapes:** Navigate board cursor across rows and columns.
+- **Action (L / R Trigger / Cross / Circle):** Select piece / Confirm destination square / Deselect.
+- **Highlighting:** Emerald green highlights active piece; vibrant gold dots indicate valid target squares; hollow red rings indicate capture opportunities.
 
 ### System Buttons
 - **START:** Pause / Resume match overlay.
@@ -92,6 +104,8 @@ In **1 Player (VS AI)** mode, Player 2 is autonomously driven by an algorithmic 
 - **Air Hockey:** Dynamic territorial AI defending its goal crease and executing offensive forward strikes when the puck crosses the centerline.
 - **Spinner War:** Vector pursuit tracking Player 1's centroid and firing Turbo Boost charges during close-range collision vectors.
 - **Tank Battle:** Predictive obstacle navigation, turret angle lead tracking, and projectile deflection aiming.
+- **Checkers:** Minimax heuristic prioritizing jump captures, King crownings, and center-board territorial dominance.
+- **Chess:** Alpha-beta search evaluating piece values (Q:900, R:500, B:330, N:320, P:100), piece-square tables, King safety, and tactical pawn development.
 
 ---
 
@@ -130,13 +144,12 @@ zip -r 2PlayerGames_PSP.zip PSP/
 ## Installation for Players
 
 1. Connect your PSP via USB or insert your Memory Stick into a PC card reader.
-2. Download `2PlayerGames_PSP.zip` from the [GitHub Releases](../../releases) page.
-3. Extract `2PlayerGames_PSP.zip` directly to the root of your Memory Stick (e.g., `E:\` or `F:\`).
-4. Ensure the executable is located at:
+2. Download `2PlayerGames_PSP.zip` or the standalone `EBOOT.PBP`.
+3. Deploy to your Memory Stick:
    ```text
    ms0:/PSP/GAME/2PlayerGames/EBOOT.PBP
    ```
-5. On your PSP, navigate to **Game $\rightarrow$ Memory Stick** on the XMB menu and launch **2 Player Games: The Challenge**.
+4. On your PSP, navigate to **Game $\rightarrow$ Memory Stick** on the XMB menu and launch **2 Player Games: The Challenge**.
 
 ---
 

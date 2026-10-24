@@ -293,7 +293,7 @@ class Canvas:
         print(f"Saved: {filename} ({out_w}x{out_h})")
 
 
-# ─── 1. MAIN MENU SCREENSHOT (6 GAMES) ────────────────────────────────
+# ─── 1. MAIN MENU SCREENSHOT (12 GAMES PAGINATED) ─────────────────────
 def make_screenshot_menu():
     c = Canvas()
     for y in range(H):
@@ -304,9 +304,10 @@ def make_screenshot_menu():
         for x in range(W):
             c.buf[y][x] = (r, g, b)
 
-    c.draw_centered_str(W // 2 + 1, 19, "2 PLAYER GAMES", COL_SHADOW, 3)
-    c.draw_centered_str(W // 2, 18, "2 PLAYER GAMES", COL_GOLD, 3)
-    c.draw_centered_str(W // 2, 46, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
+    c.draw_centered_str(W // 2 + 1, 15, "2 PLAYER GAMES", COL_SHADOW, 3)
+    c.draw_centered_str(W // 2, 14, "2 PLAYER GAMES", COL_GOLD, 3)
+    c.draw_centered_str(W // 2, 38, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
+    c.draw_centered_str(W // 2, 54, "PAGE 1/2: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
 
     titles1 = ["PING", "AIR", "SPINNER", "TANK", "CHECKERS", "ROYAL"]
     titles2 = ["PONG", "HOCKEY", "WAR", "BATTLE", "DAMA", "CHESS"]
@@ -322,7 +323,7 @@ def make_screenshot_menu():
 
     for i in range(6):
         cx = 16 + i * 76
-        cy = 88
+        cy = 72
         cw = 68
         ch = 76
         if i == selected:
@@ -333,15 +334,16 @@ def make_screenshot_menu():
         c.draw_centered_str(cx + cw // 2, cy + 30, titles1[i], COL_WHITE if i == selected else COL_DIM, 1)
         c.draw_centered_str(cx + cw // 2, cy + 44, titles2[i], COL_WHITE if i == selected else COL_DIM, 1)
 
-    c.draw_centered_str(W // 2, 174, descs[selected], COL_WHITE, 1)
+    c.draw_centered_str(W // 2, 162, descs[selected], COL_WHITE, 1)
 
-    mode_y = 196
+    mode_y = 186
     c.fill_rect(W // 2 - 135, mode_y, 270, 24, COL_CARD)
     c.draw_rect(W // 2 - 135, mode_y, 270, 24, COL_GOLD)
     c.draw_centered_str(W // 2, mode_y + 8, "< MODE: 2 PLAYERS (SPLIT OPPS) >", COL_GOLD, 1)
 
-    c.draw_centered_str(W // 2, 232, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1)
-    c.draw_centered_str(W // 2, 248, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1)
+    c.draw_centered_str(W // 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1)
+    c.draw_centered_str(W // 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1)
+    c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGE 1 & 2", COL_GOLD, 1)
 
     c.save_png("screenshot_menu.png")
     c.save_png("screenshot.png")
@@ -663,6 +665,99 @@ def make_screenshot_gameover():
     c.save_png("screenshot_gameover.png")
 
 
+# ─── 9. TIC-TAC-TOE SCREENSHOT ────────────────────────────────────────
+def make_screenshot_tictactoe():
+    c = Canvas()
+    bx, by, sz = 168, 40, 48
+    c.fill_rect(bx - 4, by - 4, sz * 3 + 8, sz * 3 + 8, (22, 28, 48))
+    c.draw_rect(bx - 4, by - 4, sz * 3 + 8, sz * 3 + 8, COL_BORDER)
+
+    # Grid lines
+    for i in range(1, 3):
+        c.draw_line(bx + i * sz, by, bx + i * sz, by + sz * 3, (50, 65, 105))
+        c.draw_line(bx, by + i * sz, bx + sz * 3, by + i * sz, (50, 65, 105))
+
+    # X on (0,0), (1,1); O on (0,1), (2,0)
+    grid = [
+        [1, 2, 0],
+        [0, 1, 0],
+        [2, 0, 0]
+    ]
+    for r in range(3):
+        for cl in range(3):
+            cx = bx + cl * sz + sz // 2
+            cy = by + r * sz + sz // 2
+            v = grid[r][cl]
+            if v == 1:
+                for w in (-1, 0, 1):
+                    c.draw_line(cx - 14 + w, cy - 14, cx + 14 + w, cy + 14, COL_BLUE)
+                    c.draw_line(cx - 14 + w, cy + 14, cx + 14 + w, cy - 14, COL_BLUE)
+            elif v == 2:
+                c.draw_circle(cx, cy, 15, COL_RED, False)
+                c.draw_circle(cx, cy, 14, COL_RED, False)
+
+    # Active cursor on (2, 2) winning move
+    c.draw_rect(bx + 2 * sz + 3, by + 2 * sz + 3, sz - 6, sz - 6, COL_GOLD)
+
+    # Dual Facing UI
+    c.draw_centered_str_p1(20, H // 2, "PLAYER 1 (X)", COL_BLUE, 1)
+    c.draw_centered_str_p1(45, H // 2, "YOUR TURN", COL_GOLD, 1)
+    c.draw_centered_str_p1(75, H // 2, "WINS: 2/3", COL_WHITE, 1)
+
+    c.draw_centered_str_p2(W - 20, H // 2, "PLAYER 2 (O)", COL_RED, 1)
+    c.draw_centered_str_p2(W - 45, H // 2, "WAITING", COL_DIM, 1)
+    c.draw_centered_str_p2(W - 75, H // 2, "WINS: 1/3", COL_WHITE, 1)
+
+    c.save_png("screenshot_tictactoe.png")
+
+
+# ─── 10. CONNECT 4 SCREENSHOT ─────────────────────────────────────────
+def make_screenshot_connect4():
+    c = Canvas()
+    bx, by = 135, 48
+    col_w, row_h = 30, 32
+
+    c.fill_rect(bx - 6, by - 6, col_w * 7 + 12, row_h * 6 + 12, (24, 60, 130))
+    c.draw_rect(bx - 6, by - 6, col_w * 7 + 12, row_h * 6 + 12, COL_BORDER)
+
+    # Hovering token on col 3
+    c.draw_circle(bx + 3 * col_w + col_w // 2, by - 14, 9, COL_BLUE)
+    c.draw_circle(bx + 3 * col_w + col_w // 2, by - 14, 9, COL_WHITE, False)
+
+    grid = [
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 2, 2, 0, 0, 0],
+        [0, 1, 1, 2, 2, 0, 0],
+        [2, 1, 1, 1, 2, 1, 0]
+    ]
+
+    for r in range(6):
+        for cl in range(7):
+            cx = bx + cl * col_w + col_w // 2
+            cy = by + r * row_h + row_h // 2
+            v = grid[r][cl]
+            if v == 0:
+                c.draw_circle(cx, cy, 11, (14, 18, 36))
+                c.draw_circle(cx, cy, 11, (16, 40, 90), False)
+            else:
+                col = COL_BLUE if v == 1 else COL_RED
+                c.draw_circle(cx, cy, 11, col)
+                c.draw_circle(cx, cy, 11, COL_WHITE, False)
+                c.draw_circle(cx, cy, 6, COL_WHITE, False)
+
+    c.draw_centered_str_p1(20, H // 2, "PLAYER 1", COL_BLUE, 1)
+    c.draw_centered_str_p1(45, H // 2, "YOUR TURN", COL_GOLD, 1)
+    c.draw_centered_str_p1(75, H // 2, "WINS: 2/3", COL_WHITE, 1)
+
+    c.draw_centered_str_p2(W - 20, H // 2, "PLAYER 2", COL_RED, 1)
+    c.draw_centered_str_p2(W - 45, H // 2, "WAITING", COL_DIM, 1)
+    c.draw_centered_str_p2(W - 75, H // 2, "WINS: 1/3", COL_WHITE, 1)
+
+    c.save_png("screenshot_connect4.png")
+
+
 if __name__ == "__main__":
     make_screenshot_menu()
     make_screenshot_pingpong()
@@ -672,4 +767,6 @@ if __name__ == "__main__":
     make_screenshot_checkers()
     make_screenshot_chess()
     make_screenshot_gameover()
-    print("All 8 screenshots generated successfully.")
+    make_screenshot_tictactoe()
+    make_screenshot_connect4()
+    print("All 10 screenshots generated successfully.")

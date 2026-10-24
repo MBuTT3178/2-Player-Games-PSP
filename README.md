@@ -2,7 +2,7 @@
 
 A native C++11 and SDL2 Sony PlayStation Portable (PSP) homebrew port of the hit local multiplayer party game **"2 Player Games: The Challenge"** (originally by JindoBlu). 
 
-Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 12MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across 6 flagship minigames.
+Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 14MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **12 complete minigames** arranged in an expandable paginated grid carousel.
 
 <p align="center">
   <img src="screenshot.png" alt="2 Player Games PSP Edition" width="760"/>
@@ -25,23 +25,37 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 | **5. Checkers (Dama)** | **6. Chess (Royal Tactics)** |
 |:---:|:---:|
 | <img src="screenshot_checkers.png" alt="Checkers" width="460"/> | <img src="screenshot_chess.png" alt="Chess" width="460"/> |
-| *8×8 board, diagonal steps, jump captures & King crowns* | *Full piece set, ray validation, checks & smart AI* |
+| *8×8 board, diagonal steps, jump captures & King crowns* | *Vector piece silhouettes, ray validation, checks & smart AI* |
 
-| **7. Main Menu (6-Game Carousel)** | **8. Dual-Facing Match Over** |
+| **7. Tic-Tac-Toe (Tris)** | **8. Connect 4 (Four in a Row)** |
+|:---:|:---:|
+| <img src="screenshot_tictactoe.png" alt="Tic-Tac-Toe" width="460"/> | <img src="screenshot_connect4.png" alt="Connect 4" width="460"/> |
+| *Classic 3×3 grid duel, win line strike & AI blocking* | *Vertical 7×6 gravity drop, slot cutouts & 4-chain tactics* |
+
+| **9. Main Menu (Paginated Carousel)** | **10. Dual-Facing Match Over** |
 |:---:|:---:|
 | <img src="screenshot_menu.png" alt="Main Menu" width="460"/> | <img src="screenshot_gameover.png" alt="Game Over" width="460"/> |
-| *6 minigame cards & hardware controls reminder* | *Dual rotated victory cards facing each player's controls* |
+| *Multi-page grid menu with [L/R] instant page flip* | *Dual rotated victory cards facing each player's controls* |
 
 ---
 
-## Minigame Collection (6 Games)
+## Minigame Collection (12 Games)
 
+### Page 1: Arcade & Action Classics
 1. **Ping Pong (Table Tennis):** Classic paddle rally battle with dynamic deflection angle physics and escalating volley velocity. First to 5 points wins.
 2. **Air Hockey:** Full 2D arena hockey table with circular mallet and puck collision physics, boundary rebounds, goal pockets, and high-velocity smash strikes. First to 5 goals wins.
 3. **Spinner War (Beyblade Sumo):** Floating circular ring arena battle. Steer high-torque spinning tops with blade collision impulses and Turbo Boost charges to knock the opponent into the void. First to 3 knockouts wins.
 4. **Tank Battle:** Tactical battlefield with 6 brick barricades. Navigate top-down tanks and fire ricocheting cannon shells that bounce off perimeter and obstacle walls. First to 5 kills wins.
 5. **Checkers (Dama):** Authentic 8×8 tournament checkers. Forward diagonal strides, mandatory jump captures over opponent pieces, and crowning Kings upon reaching the baseline.
-6. **Chess:** Complete royal strategy chess featuring Pawns, Knights, Bishops, Rooks, Queens, and Kings. Strict check detection, piece-square evaluation AI, and promotion mechanics.
+6. **Chess:** Complete royal strategy chess featuring Pawns, Knights, Bishops, Rooks, Queens, and Kings rendered with detailed vector silhouettes. Strict check detection, piece-square evaluation AI, and promotion mechanics.
+
+### Page 2: Tabletop & Strategy (Wave 2)
+7. **Tic-Tac-Toe (Tris):** Fast-paced 3×3 line completion duel. Dynamic win-strike rendering, center/corner AI heuristics, and best-of-3 tournament scoring.
+8. **Connect 4:** Vertical 7×6 gravity-drop chip duel with tactile slotted cutouts. Column-by-column AI evaluating immediate and future 4-in-a-row opportunities.
+9. **Dots & Boxes:** 4×4 dot grid territory capture. Players alternate drawing horizontal and vertical line segments; completing a box captures it and grants an immediate bonus turn.
+10. **Reversi (Othello):** 8×8 tournament disc-flipping board with center starters, valid move dot indicators, and a positional matrix AI favoring corners (+100) and edge anchors.
+11. **Battleship (Naval Salvo):** Split-screen 6×6 naval radar combat. Hunt and sink the enemy fleet (Carrier, Cruiser, Patrol) with explosive hit effects and hunting AI.
+12. **Tug of War:** High-cadence button mashing rope battle over a center mud pit! Features dynamic rope physics tension, animated stick tuggers leaning back, and fatigue-scaled CPU AI.
 
 ---
 

@@ -1277,6 +1277,81 @@ struct ChessMove {
     int captured;
 };
 
+static void draw_chess_piece_icon(SDL_Renderer *ren, int cx, int cy, int type, const Color &c) {
+    set_color(ren, c);
+    switch (type) {
+        case 1: // PAWN
+            draw_circle(ren, cx, cy - 3, 3, c);
+            SDL_RenderDrawLine(ren, cx - 2, cy + 1, cx + 2, cy + 1);
+            SDL_RenderDrawLine(ren, cx - 3, cy + 3, cx + 3, cy + 3);
+            SDL_RenderDrawLine(ren, cx - 4, cy + 4, cx + 4, cy + 4);
+            break;
+        case 2: // KNIGHT
+            SDL_RenderDrawPoint(ren, cx - 2, cy - 6);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 5, cx + 2, cy - 4);
+            SDL_RenderDrawLine(ren, cx - 4, cy - 4, cx + 3, cy - 2);
+            SDL_RenderDrawLine(ren, cx - 4, cy - 2, cx + 4, cy - 1);
+            SDL_RenderDrawLine(ren, cx + 1, cy,     cx + 4, cy);
+            SDL_RenderDrawLine(ren, cx - 4, cy - 1, cx + 1, cy + 1);
+            SDL_RenderDrawLine(ren, cx - 3, cy + 2, cx + 1, cy + 2);
+            SDL_RenderDrawLine(ren, cx - 4, cy + 3, cx + 3, cy + 3);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 4, cx + 4, cy + 4);
+            break;
+        case 3: // BISHOP
+            draw_circle(ren, cx, cy - 5, 1, c);
+            SDL_RenderDrawLine(ren, cx - 1, cy - 3, cx + 1, cy - 3);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 2, cx + 3, cy - 2);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 1, cx + 3, cy - 1);
+            SDL_RenderDrawLine(ren, cx - 2, cy,     cx + 2, cy);
+            SDL_RenderDrawLine(ren, cx - 1, cy + 1, cx + 1, cy + 1);
+            SDL_RenderDrawLine(ren, cx - 3, cy + 2, cx + 3, cy + 2);
+            SDL_RenderDrawLine(ren, cx - 4, cy + 3, cx + 4, cy + 3);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 4, cx + 4, cy + 4);
+            break;
+        case 4: // ROOK
+            SDL_RenderDrawPoint(ren, cx - 4, cy - 5);
+            SDL_RenderDrawPoint(ren, cx - 4, cy - 4);
+            SDL_RenderDrawPoint(ren, cx,     cy - 5);
+            SDL_RenderDrawPoint(ren, cx,     cy - 4);
+            SDL_RenderDrawPoint(ren, cx + 4, cy - 5);
+            SDL_RenderDrawPoint(ren, cx + 4, cy - 4);
+            SDL_RenderDrawLine(ren, cx - 4, cy - 3, cx + 4, cy - 3);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 2, cx + 3, cy - 2);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 1, cx + 3, cy - 1);
+            SDL_RenderDrawLine(ren, cx - 3, cy,     cx + 3, cy);
+            SDL_RenderDrawLine(ren, cx - 3, cy + 1, cx + 3, cy + 1);
+            SDL_RenderDrawLine(ren, cx - 4, cy + 2, cx + 4, cy + 2);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 3, cx + 5, cy + 3);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 4, cx + 5, cy + 4);
+            break;
+        case 5: // QUEEN
+            SDL_RenderDrawPoint(ren, cx - 4, cy - 5);
+            SDL_RenderDrawPoint(ren, cx,     cy - 6);
+            SDL_RenderDrawPoint(ren, cx + 4, cy - 5);
+            SDL_RenderDrawLine(ren, cx - 4, cy - 4, cx - 3, cy - 2);
+            SDL_RenderDrawLine(ren, cx,     cy - 5, cx,     cy - 2);
+            SDL_RenderDrawLine(ren, cx + 4, cy - 4, cx + 3, cy - 2);
+            SDL_RenderDrawLine(ren, cx - 4, cy - 2, cx + 4, cy - 2);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 1, cx + 3, cy - 1);
+            SDL_RenderDrawLine(ren, cx - 2, cy,     cx + 2, cy);
+            SDL_RenderDrawLine(ren, cx - 2, cy + 1, cx + 2, cy + 1);
+            SDL_RenderDrawLine(ren, cx - 4, cy + 2, cx + 4, cy + 2);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 3, cx + 5, cy + 3);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 4, cx + 5, cy + 4);
+            break;
+        case 6: // KING
+            SDL_RenderDrawLine(ren, cx,     cy - 6, cx,     cy - 2);
+            SDL_RenderDrawLine(ren, cx - 2, cy - 4, cx + 2, cy - 4);
+            SDL_RenderDrawLine(ren, cx - 3, cy - 1, cx + 3, cy - 1);
+            SDL_RenderDrawLine(ren, cx - 4, cy,     cx + 4, cy);
+            SDL_RenderDrawLine(ren, cx - 3, cy + 1, cx + 3, cy + 1);
+            SDL_RenderDrawLine(ren, cx - 3, cy + 2, cx + 3, cy + 2);
+            SDL_RenderDrawLine(ren, cx - 4, cy + 3, cx + 4, cy + 3);
+            SDL_RenderDrawLine(ren, cx - 5, cy + 4, cx + 5, cy + 4);
+            break;
+    }
+}
+
 struct ChessGame {
     int board[8][8]; // 1:P, 2:N, 3:B, 4:R, 5:Q, 6:K (+P1, -P2)
     int turn; // 1 (P1 Blue) or -1 (P2 Red)
@@ -1555,8 +1630,6 @@ struct ChessGame {
         set_color(ren, COL_BORDER);
         SDL_RenderDrawRect(ren, &frame);
 
-        static const char p_names[7] = {' ', 'P', 'N', 'B', 'R', 'Q', 'K'};
-
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 SDL_Rect sq = {bx + c * sz, by + r * sz, sz, sz};
@@ -1576,7 +1649,7 @@ struct ChessGame {
                     Color pcol = (p > 0) ? COL_BLUE : COL_RED;
                     draw_circle(ren, cx, cy, 11, pcol);
                     draw_circle(ren, cx, cy, 11, COL_WHITE, false);
-                    draw_char(ren, cx - 4, cy - 4, p_names[abs(p)], (abs(p) >= 5 ? COL_GOLD : COL_WHITE), 1);
+                    draw_chess_piece_icon(ren, cx, cy, abs(p), (abs(p) >= 5 ? COL_GOLD : COL_WHITE));
                 }
             }
         }

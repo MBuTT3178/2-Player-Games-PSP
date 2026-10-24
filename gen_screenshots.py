@@ -131,6 +131,71 @@ class Canvas:
                 self.set_pixel(cx - dx_max, cy + dy, col)
                 self.set_pixel(cx + dx_max, cy + dy, col)
 
+    def draw_chess_piece_icon(self, cx, cy, piece_type, col):
+        if piece_type == 1: # PAWN
+            self.draw_circle(cx, cy - 3, 3, col)
+            self.draw_line(cx - 2, cy + 1, cx + 2, cy + 1, col)
+            self.draw_line(cx - 3, cy + 3, cx + 3, cy + 3, col)
+            self.draw_line(cx - 4, cy + 4, cx + 4, cy + 4, col)
+        elif piece_type == 2: # KNIGHT
+            self.set_pixel(cx - 2, cy - 6, col)
+            self.draw_line(cx - 3, cy - 5, cx + 2, cy - 4, col)
+            self.draw_line(cx - 4, cy - 4, cx + 3, cy - 2, col)
+            self.draw_line(cx - 4, cy - 2, cx + 4, cy - 1, col)
+            self.draw_line(cx + 1, cy,     cx + 4, cy, col)
+            self.draw_line(cx - 4, cy - 1, cx + 1, cy + 1, col)
+            self.draw_line(cx - 3, cy + 2, cx + 1, cy + 2, col)
+            self.draw_line(cx - 4, cy + 3, cx + 3, cy + 3, col)
+            self.draw_line(cx - 5, cy + 4, cx + 4, cy + 4, col)
+        elif piece_type == 3: # BISHOP
+            self.draw_circle(cx, cy - 5, 1, col)
+            self.draw_line(cx - 1, cy - 3, cx + 1, cy - 3, col)
+            self.draw_line(cx - 3, cy - 2, cx + 3, cy - 2, col)
+            self.draw_line(cx - 3, cy - 1, cx + 3, cy - 1, col)
+            self.draw_line(cx - 2, cy,     cx + 2, cy, col)
+            self.draw_line(cx - 1, cy + 1, cx + 1, cy + 1, col)
+            self.draw_line(cx - 3, cy + 2, cx + 3, cy + 2, col)
+            self.draw_line(cx - 4, cy + 3, cx + 4, cy + 3, col)
+            self.draw_line(cx - 5, cy + 4, cx + 4, cy + 4, col)
+        elif piece_type == 4: # ROOK
+            self.set_pixel(cx - 4, cy - 5, col)
+            self.set_pixel(cx - 4, cy - 4, col)
+            self.set_pixel(cx,     cy - 5, col)
+            self.set_pixel(cx,     cy - 4, col)
+            self.set_pixel(cx + 4, cy - 5, col)
+            self.set_pixel(cx + 4, cy - 4, col)
+            self.draw_line(cx - 4, cy - 3, cx + 4, cy - 3, col)
+            self.draw_line(cx - 3, cy - 2, cx + 3, cy - 2, col)
+            self.draw_line(cx - 3, cy - 1, cx + 3, cy - 1, col)
+            self.draw_line(cx - 3, cy,     cx + 3, cy, col)
+            self.draw_line(cx - 3, cy + 1, cx + 3, cy + 1, col)
+            self.draw_line(cx - 4, cy + 2, cx + 4, cy + 2, col)
+            self.draw_line(cx - 5, cy + 3, cx + 5, cy + 3, col)
+            self.draw_line(cx - 5, cy + 4, cx + 5, cy + 4, col)
+        elif piece_type == 5: # QUEEN
+            self.set_pixel(cx - 4, cy - 5, col)
+            self.set_pixel(cx,     cy - 6, col)
+            self.set_pixel(cx + 4, cy - 5, col)
+            self.draw_line(cx - 4, cy - 4, cx - 3, cy - 2, col)
+            self.draw_line(cx,     cy - 5, cx,     cy - 2, col)
+            self.draw_line(cx + 4, cy - 4, cx + 3, cy - 2, col)
+            self.draw_line(cx - 4, cy - 2, cx + 4, cy - 2, col)
+            self.draw_line(cx - 3, cy - 1, cx + 3, cy - 1, col)
+            self.draw_line(cx - 2, cy,     cx + 2, cy, col)
+            self.draw_line(cx - 2, cy + 1, cx + 2, cy + 1, col)
+            self.draw_line(cx - 4, cy + 2, cx + 4, cy + 2, col)
+            self.draw_line(cx - 5, cy + 3, cx + 5, cy + 3, col)
+            self.draw_line(cx - 5, cy + 4, cx + 5, cy + 4, col)
+        elif piece_type == 6: # KING
+            self.draw_line(cx,     cy - 6, cx,     cy - 2, col)
+            self.draw_line(cx - 2, cy - 4, cx + 2, cy - 4, col)
+            self.draw_line(cx - 3, cy - 1, cx + 3, cy - 1, col)
+            self.draw_line(cx - 4, cy,     cx + 4, cy, col)
+            self.draw_line(cx - 3, cy + 1, cx + 3, cy + 1, col)
+            self.draw_line(cx - 3, cy + 2, cx + 3, cy + 2, col)
+            self.draw_line(cx - 4, cy + 3, cx + 4, cy + 3, col)
+            self.draw_line(cx - 5, cy + 4, cx + 5, cy + 4, col)
+
     # Standard Horizontal Text
     def draw_char(self, x, y, ch, col, scale=1):
         c = ord(ch.upper())
@@ -545,7 +610,7 @@ def make_screenshot_chess():
                 c.draw_circle(cx, cy, 11, col)
                 c.draw_circle(cx, cy, 11, COL_WHITE, False)
                 symbol_col = COL_GOLD if abs(p) >= 5 else COL_WHITE
-                c.draw_char(cx - 4, cy - 4, p_names[abs(p)], symbol_col, 1)
+                c.draw_chess_piece_icon(cx, cy, abs(p), symbol_col)
 
     # Valid destination targets for Knight on f3: d4 (pawn), e5 (strike), g5 (jump)
     for (tr, tc, cap) in [(3, 3, True), (3, 6, False), (4, 7, False), (2, 4, False)]:

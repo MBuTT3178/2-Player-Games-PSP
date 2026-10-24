@@ -3,7 +3,6 @@
 *.elf
 *.prx
 PARAM.SFO
-EBOOT.PBP
 *.zip
 
 # Local scratch and package directory

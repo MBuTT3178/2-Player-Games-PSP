@@ -1744,9 +1744,8 @@ struct App {
             draw_centered_str(ren, SCR_W / 2, 18, "2 PLAYER GAMES", COL_GOLD, 3);
             draw_centered_str(ren, SCR_W / 2, 46, "THE CHALLENGE - PSP EDITION", COL_DIM, 1);
 
-            const char *games[GAME_COUNT] = {
-                "PING PONG", "AIR HOCKEY", "SPINNERS", "TANKS", "CHECKERS", "CHESS"
-            };
+            const char *titles1[GAME_COUNT] = {"PING",    "AIR",    "SPINNER", "TANK",   "CHECKERS", "ROYAL"};
+            const char *titles2[GAME_COUNT] = {"PONG",    "HOCKEY", "WAR",     "BATTLE", "DAMA",     "CHESS"};
             const char *descs[GAME_COUNT] = {
                 "CLASSIC PADDLE RALLY BATTLE",
                 "2D AIR HOCKEY TABLE & SMASHES",
@@ -1777,7 +1776,8 @@ struct App {
                 char num[8];
                 snprintf(num, sizeof(num), "#%d", i + 1);
                 draw_centered_str(ren, cx + cw / 2, cy + 10, num, COL_GOLD, 1);
-                draw_centered_str(ren, cx + cw / 2, cy + 34, games[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
+                draw_centered_str(ren, cx + cw / 2, cy + 30, titles1[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
+                draw_centered_str(ren, cx + cw / 2, cy + 44, titles2[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
             }
 
             draw_centered_str(ren, SCR_W / 2, 174, descs[menu_cursor], COL_WHITE, 1);

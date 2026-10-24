@@ -243,7 +243,8 @@ def make_screenshot_menu():
     c.draw_centered_str(W // 2, 18, "2 PLAYER GAMES", COL_GOLD, 3)
     c.draw_centered_str(W // 2, 46, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
 
-    games = ["PING PONG", "AIR HOCKEY", "SPINNERS", "TANKS", "CHECKERS", "CHESS"]
+    titles1 = ["PING", "AIR", "SPINNER", "TANK", "CHECKERS", "ROYAL"]
+    titles2 = ["PONG", "HOCKEY", "WAR", "BATTLE", "DAMA", "CHESS"]
     descs = [
         "CLASSIC PADDLE RALLY BATTLE",
         "2D AIR HOCKEY TABLE & SMASHES",
@@ -264,7 +265,8 @@ def make_screenshot_menu():
         c.fill_rect(cx, cy, cw, ch, COL_CARD)
         c.draw_rect(cx, cy, cw, ch, COL_WHITE if i == selected else COL_BORDER)
         c.draw_centered_str(cx + cw // 2, cy + 10, f"#{i+1}", COL_GOLD, 1)
-        c.draw_centered_str(cx + cw // 2, cy + 34, games[i], COL_WHITE if i == selected else COL_DIM, 1)
+        c.draw_centered_str(cx + cw // 2, cy + 30, titles1[i], COL_WHITE if i == selected else COL_DIM, 1)
+        c.draw_centered_str(cx + cw // 2, cy + 44, titles2[i], COL_WHITE if i == selected else COL_DIM, 1)
 
     c.draw_centered_str(W // 2, 174, descs[selected], COL_WHITE, 1)
 

@@ -916,32 +916,53 @@ def make_screenshot_penalty():
 # ─── 15. MICRO RACERS SCREENSHOT ──────────────────────────────────────
 def make_screenshot_microracers():
     c = Canvas()
-    # Outer track
-    c.fill_rect(40, 30, W - 80, 210, (40, 42, 50))
-    c.draw_rect(40, 30, W - 80, 210, COL_WHITE)
+    # Grass Backdrop
+    c.fill_rect(0, 0, W, H, (35, 95, 45))
 
-    # Red/White curb edges
-    for x in range(40, W - 40, 16):
-        c.fill_rect(x, 26, 8, 4, COL_RED)
-        c.fill_rect(x + 8, 26, 8, 4, COL_WHITE)
-        c.fill_rect(x, 240, 8, 4, COL_RED)
-        c.fill_rect(x + 8, 240, 8, 4, COL_WHITE)
+    # Asphalt Track Outer
+    c.fill_rect(120, 28, 240, 216, (55, 60, 72))
+    c.draw_circle(120, 136, 107, (55, 60, 72))
+    c.draw_circle(360, 136, 107, (55, 60, 72))
 
-    # Infield grass island
-    c.fill_rect(110, 80, W - 220, 110, (35, 105, 45))
-    c.draw_rect(110, 80, W - 220, 110, COL_WHITE)
+    # Outer white curb lines
+    c.draw_line(120, 28, 360, 28, COL_WHITE)
+    c.draw_line(120, 244, 360, 244, COL_WHITE)
+    c.draw_circle(120, 136, 107, COL_WHITE, False)
+    c.draw_circle(360, 136, 107, COL_WHITE, False)
 
-    # Checkered finish line
-    for y in range(190, 240, 6):
-        c.fill_rect(240, y, 6, 6, COL_WHITE if (y // 6) % 2 == 0 else (20, 20, 20))
+    # Infield Grass Island
+    c.fill_rect(120, 86, 240, 100, (35, 95, 45))
+    c.draw_circle(120, 136, 49, (35, 95, 45))
+    c.draw_circle(360, 136, 49, (35, 95, 45))
 
-    # Blue racer drifting
-    c.fill_rect(190, 202, 12, 10, COL_BLUE)
-    c.draw_rect(190, 202, 12, 10, COL_WHITE)
+    # Inner white curb lines
+    c.draw_line(120, 86, 360, 86, COL_WHITE)
+    c.draw_line(120, 186, 360, 186, COL_WHITE)
+    c.draw_circle(120, 136, 49, COL_WHITE, False)
+    c.draw_circle(360, 136, 49, COL_WHITE, False)
 
-    # Red racer following
-    c.fill_rect(160, 216, 12, 10, COL_RED)
-    c.draw_rect(160, 216, 12, 10, COL_WHITE)
+    # Center dashed racing line
+    for lx in range(130, 360, 20):
+        c.draw_line(lx, 57, lx + 10, 57, (110, 120, 135))
+        c.draw_line(lx, 215, lx + 10, 215, (110, 120, 135))
+
+    # Checkered finish line (x = 240, y = 186 to 244)
+    for fy in range(186, 244, 8):
+        for fx in range(237, 243, 3):
+            white_tile = ((fx + fy) // 3) % 2 == 0
+            c.fill_rect(fx, fy, 3, 8, COL_WHITE if white_tile else (20, 20, 20))
+
+    # Blue racer drifting through Turn 1
+    p1_x, p1_y = 100, 210
+    c.fill_rect(p1_x - 5, p1_y - 4, 11, 8, COL_BLUE)
+    c.draw_rect(p1_x - 5, p1_y - 4, 11, 8, COL_WHITE)
+    c.draw_circle(p1_x, p1_y, 2, COL_WHITE)
+
+    # Red racer following closely
+    p2_x, p2_y = 150, 218
+    c.fill_rect(p2_x - 5, p2_y - 4, 11, 8, COL_RED)
+    c.draw_rect(p2_x - 5, p2_y - 4, 11, 8, COL_WHITE)
+    c.draw_circle(p2_x, p2_y, 2, COL_WHITE)
 
     c.draw_centered_str(W // 2, 130, "LAP: 2/3   vs   2/3", COL_WHITE, 1)
 

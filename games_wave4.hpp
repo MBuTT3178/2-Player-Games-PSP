@@ -175,13 +175,45 @@ struct MicroRacersGame {
     float p1_x, p1_y, p1_angle, p1_speed;
     float p2_x, p2_y, p2_angle, p2_speed;
     int p1_laps, p2_laps;
-    bool p1_chk, p2_chk;
+    bool p1_chk1, p1_chk2, p1_chk3;
+    bool p2_chk1, p2_chk2, p2_chk3;
+    int ai_wp;
     int round_over_timer;
+
+    bool is_on_track(float x, float y) const {
+        bool in_outer = false;
+        if (x >= 120.0f && x <= 360.0f) {
+            in_outer = (y >= 26.0f && y <= 246.0f);
+        } else if (x < 120.0f) {
+            float dx = x - 120.0f, dy = y - 136.0f;
+            in_outer = (dx * dx + dy * dy <= 108.0f * 108.0f);
+        } else {
+            float dx = x - 360.0f, dy = y - 136.0f;
+            in_outer = (dx * dx + dy * dy <= 108.0f * 108.0f);
+        }
+        if (!in_outer) return false;
+
+        bool in_inner = false;
+        if (x >= 120.0f && x <= 360.0f) {
+            in_inner = (y >= 86.0f && y <= 186.0f);
+        } else if (x < 120.0f) {
+            float dx = x - 120.0f, dy = y - 136.0f;
+            in_inner = (dx * dx + dy * dy < 48.0f * 48.0f);
+        } else {
+            float dx = x - 360.0f, dy = y - 136.0f;
+            in_inner = (dx * dx + dy * dy < 48.0f * 48.0f);
+        }
+        return !in_inner;
+    }
 
     void reset(bool reset_match = true) {
         if (reset_match) { p1_laps = 0; p2_laps = 0; }
-        p1_x = 220.0f; p1_y = 210.0f; p1_angle = 3.14159f; p1_speed = 0.0f; p1_chk = false;
-        p2_x = 220.0f; p2_y = 224.0f; p2_angle = 3.14159f; p2_speed = 0.0f; p2_chk = false;
+        // Start on bottom straight behind finish line (x=240), facing West (3.14159)
+        p1_x = 265.0f; p1_y = 204.0f; p1_angle = 3.14159f; p1_speed = 0.0f;
+        p2_x = 265.0f; p2_y = 224.0f; p2_angle = 3.14159f; p2_speed = 0.0f;
+        p1_chk1 = p1_chk2 = p1_chk3 = false;
+        p2_chk1 = p2_chk2 = p2_chk3 = false;
+        ai_wp = 0;
         round_over_timer = 0;
     }
 
@@ -196,93 +228,235 @@ struct MicroRacersGame {
         }
 
         // P1 Controls
-        if (pad.p1.left)  p1_angle -= 0.07f;
-        if (pad.p1.right) p1_angle += 0.07f;
-        if (pad.p1.action || pad.p1.up) p1_speed += 0.18f;
-        else p1_speed *= 0.94f;
-        if (p1_speed > 3.4f) p1_speed = 3.4f;
-
-        // P2 Controls
         if (mode == MODE_2P_LOCAL) {
-            if (pad.p2.left)  p2_angle -= 0.07f;
-            if (pad.p2.right) p2_angle += 0.07f;
-            if (pad.p2.action || pad.p2.up) p2_speed += 0.18f;
-            else p2_speed *= 0.94f;
+            // Player 1 facing East: Left = North (D-Pad Up), Right = South (D-Pad Down)
+            if (pad.p1.left)  p1_angle -= 0.08f;
+            if (pad.p1.right) p1_angle += 0.08f;
+            if (pad.p1.action || pad.p1.up) p1_speed += 0.18f;
+            else if (pad.p1.down) p1_speed -= 0.20f;
+            else p1_speed *= 0.95f;
         } else {
-            // AI Steer along oval circuit
-            float target_angle = atan2f(136.0f - p2_y, 240.0f - p2_x) + 1.57f;
+            // 1P Mode standard
+            if (pad.p1.left)  p1_angle -= 0.08f;
+            if (pad.p1.right) p1_angle += 0.08f;
+            if (pad.p1.action || pad.p1.up) p1_speed += 0.18f;
+            else if (pad.p1.down) p1_speed -= 0.20f;
+            else p1_speed *= 0.95f;
+        }
+
+        // P2 Controls (Human or AI)
+        if (mode == MODE_2P_LOCAL) {
+            // Player 2 facing West: Left = South (Cross), Right = North (Triangle)
+            if (pad.p2.left)  p2_angle -= 0.08f;
+            if (pad.p2.right) p2_angle += 0.08f;
+            if (pad.p2.action || pad.p2.up) p2_speed += 0.18f;
+            else if (pad.p2.down) p2_speed -= 0.20f;
+            else p2_speed *= 0.95f;
+        } else {
+            // High-Performance 8-Waypoint AI Racing Line
+            static const float ai_waypoints[8][2] = {
+                {200.0f, 214.0f}, // 0: Bottom straight heading West
+                {110.0f, 214.0f}, // 1: Approaching Turn 1
+                {55.0f,  136.0f}, // 2: Apex Turn 1
+                {110.0f,  58.0f}, // 3: Exiting Turn 1 into Top straight
+                {240.0f,  58.0f}, // 4: Mid Top straight heading East
+                {370.0f,  58.0f}, // 5: Approaching Turn 2
+                {425.0f, 136.0f}, // 6: Apex Turn 2
+                {370.0f, 214.0f}  // 7: Exiting Turn 2 into Finish straight
+            };
+
+            float target_x = ai_waypoints[ai_wp][0];
+            float target_y = ai_waypoints[ai_wp][1];
+            float wdx = target_x - p2_x;
+            float wdy = target_y - p2_y;
+            float wdist = sqrtf(wdx * wdx + wdy * wdy);
+            if (wdist < 38.0f) {
+                ai_wp = (ai_wp + 1) % 8;
+            }
+
+            float target_angle = atan2f(wdy, wdx);
             float diff = target_angle - p2_angle;
             while (diff < -3.14159f) diff += 6.283185f;
-            while (diff > 3.14159f) diff -= 6.283185f;
-            p2_angle += diff * 0.06f;
-            p2_speed += 0.17f;
-        }
-        if (p2_speed > 3.4f) p2_speed = 3.4f;
+            while (diff > 3.14159f)  diff -= 6.283185f;
 
-        // Velocity
+            if (diff > 0.08f) p2_angle += 0.08f;
+            else if (diff < -0.08f) p2_angle -= 0.08f;
+            else p2_angle = target_angle;
+
+            p2_speed += 0.17f;
+            if (p2_speed > 3.25f) p2_speed = 3.25f;
+        }
+
+        // Clamp speeds
+        if (p1_speed > 3.6f)  p1_speed = 3.6f;
+        if (p1_speed < -1.2f) p1_speed = -1.2f;
+        if (p2_speed > 3.6f)  p2_speed = 3.6f;
+        if (p2_speed < -1.2f) p2_speed = -1.2f;
+
+        // Position update
+        float prev1_x = p1_x, prev2_x = p2_x;
         p1_x += cosf(p1_angle) * p1_speed;
         p1_y += sinf(p1_angle) * p1_speed;
         p2_x += cosf(p2_angle) * p2_speed;
         p2_y += sinf(p2_angle) * p2_speed;
 
-        // Outer & inner boundary friction slowdown
-        float d1 = (p1_x - 240)*(p1_x - 240)/170.0f/170.0f + (p1_y - 136)*(p1_y - 136)/95.0f/95.0f;
-        float d1_in = (p1_x - 240)*(p1_x - 240)/90.0f/90.0f + (p1_y - 136)*(p1_y - 136)/45.0f/45.0f;
-        if (d1 > 1.0f || d1_in < 1.0f) p1_speed *= 0.88f; // Off track slowdown
+        // Screen boundary safety clamp
+        if (p1_x < 16.0f) p1_x = 16.0f;
+        if (p1_x > SCR_W - 16.0f) p1_x = SCR_W - 16.0f;
+        if (p1_y < 16.0f) p1_y = 16.0f;
+        if (p1_y > SCR_H - 16.0f) p1_y = SCR_H - 16.0f;
+        if (p2_x < 16.0f) p2_x = 16.0f;
+        if (p2_x > SCR_W - 16.0f) p2_x = SCR_W - 16.0f;
+        if (p2_y < 16.0f) p2_y = 16.0f;
+        if (p2_y > SCR_H - 16.0f) p2_y = SCR_H - 16.0f;
 
-        float d2 = (p2_x - 240)*(p2_x - 240)/170.0f/170.0f + (p2_y - 136)*(p2_y - 136)/95.0f/95.0f;
-        float d2_in = (p2_x - 240)*(p2_x - 240)/90.0f/90.0f + (p2_y - 136)*(p2_y - 136)/45.0f/45.0f;
-        if (d2 > 1.0f || d2_in < 1.0f) p2_speed *= 0.88f;
-
-        // Checkpoint & Lap completion (Finish line at x=240, y > 136)
-        if (p1_y < 80) p1_chk = true;
-        if (p1_chk && p1_x > 235 && p1_x < 245 && p1_y > 180) {
-            p1_laps++;
-            p1_chk = false;
-            play_tone(660.0f, 35);
-            if (p1_laps >= 3) { round_over_timer = 50; play_tone(750.0f, 150); }
+        // Off-track grass friction
+        if (!is_on_track(p1_x, p1_y)) {
+            if (p1_speed > 1.3f) p1_speed *= 0.88f;
+        }
+        if (!is_on_track(p2_x, p2_y)) {
+            if (p2_speed > 1.3f) p2_speed *= 0.88f;
         }
 
-        if (p2_y < 80) p2_chk = true;
-        if (p2_chk && p2_x > 235 && p2_x < 245 && p2_y > 180) {
+        // Car-to-Car contact collision
+        float cdx = p2_x - p1_x, cdy = p2_y - p1_y;
+        float cdist = sqrtf(cdx * cdx + cdy * cdy);
+        if (cdist < 13.0f && cdist > 0.1f) {
+            float overlap = 13.0f - cdist;
+            float nx = cdx / cdist, ny = cdy / cdist;
+            p1_x -= nx * overlap * 0.5f;
+            p1_y -= ny * overlap * 0.5f;
+            p2_x += nx * overlap * 0.5f;
+            p2_y += ny * overlap * 0.5f;
+            p1_speed *= 0.94f;
+            p2_speed *= 0.94f;
+            play_tone(240.0f, 15);
+        }
+
+        // P1 Checkpoints: 1=Turn 1 (Left), 2=Top straight, 3=Turn 2 (Right)
+        if (p1_x < 110.0f && p1_y >= 80.0f && p1_y <= 190.0f) p1_chk1 = true;
+        if (p1_chk1 && p1_y < 86.0f && p1_x >= 140.0f && p1_x <= 340.0f) p1_chk2 = true;
+        if (p1_chk2 && p1_x > 370.0f && p1_y >= 80.0f && p1_y <= 190.0f) p1_chk3 = true;
+
+        // P1 Lap Completion: Crossing x=240 heading West (prev >= 240, curr < 240) in bottom lane
+        if (p1_chk3 && p1_y >= 186.0f && prev1_x >= 240.0f && p1_x < 240.0f) {
+            p1_laps++;
+            p1_chk1 = p1_chk2 = p1_chk3 = false;
+            play_tone(660.0f, 40);
+            if (p1_laps >= 3) {
+                round_over_timer = 50;
+                play_tone(750.0f, 150);
+            }
+        }
+
+        // P2 Checkpoints
+        if (p2_x < 110.0f && p2_y >= 80.0f && p2_y <= 190.0f) p2_chk1 = true;
+        if (p2_chk1 && p2_y < 86.0f && p2_x >= 140.0f && p2_x <= 340.0f) p2_chk2 = true;
+        if (p2_chk2 && p2_x > 370.0f && p2_y >= 80.0f && p2_y <= 190.0f) p2_chk3 = true;
+
+        // P2 Lap Completion
+        if (p2_chk3 && p2_y >= 186.0f && prev2_x >= 240.0f && p2_x < 240.0f) {
             p2_laps++;
-            p2_chk = false;
-            play_tone(550.0f, 35);
-            if (p2_laps >= 3) { round_over_timer = 50; play_tone(350.0f, 150); }
+            p2_chk1 = p2_chk2 = p2_chk3 = false;
+            play_tone(550.0f, 40);
+            if (p2_laps >= 3) {
+                round_over_timer = 50;
+                play_tone(350.0f, 150);
+            }
         }
     }
 
-    void render(SDL_Renderer *ren, GameMode mode) {
-        // Track Asphalt Oval
-        draw_circle(ren, 240, 136, 105, Color(55, 60, 75));
-        draw_circle(ren, 150, 136, 85, Color(55, 60, 75));
-        draw_circle(ren, 330, 136, 85, Color(55, 60, 75));
+    void draw_racer(SDL_Renderer *ren, float x, float y, float angle, const Color &col, const char *num) {
+        // Rotated chassis (14x9 box)
+        float cos_a = cosf(angle);
+        float sin_a = sinf(angle);
 
-        // Infield Grass
-        draw_circle(ren, 240, 136, 50, Color(30, 85, 45));
-        draw_circle(ren, 170, 136, 45, Color(30, 85, 45));
-        draw_circle(ren, 310, 136, 45, Color(30, 85, 45));
+        // Tires
+        set_color(ren, Color(20, 20, 20));
+        float wheel_offsets[4][2] = {
+            { 5.0f, -6.0f}, { 5.0f, 6.0f},
+            {-5.0f, -6.0f}, {-5.0f, 6.0f}
+        };
+        for (int i = 0; i < 4; i++) {
+            float wx = x + wheel_offsets[i][0] * cos_a - wheel_offsets[i][1] * sin_a;
+            float wy = y + wheel_offsets[i][0] * sin_a + wheel_offsets[i][1] * cos_a;
+            SDL_Rect wrc = {(int)wx - 2, (int)wy - 2, 4, 4};
+            SDL_RenderFillRect(ren, &wrc);
+        }
 
-        // Finish Line
+        // Main body
+        set_color(ren, col);
+        SDL_Rect body = {(int)x - 5, (int)y - 4, 11, 8};
+        SDL_RenderFillRect(ren, &body);
         set_color(ren, COL_WHITE);
-        SDL_RenderDrawLine(ren, 240, 190, 240, 235);
+        SDL_RenderDrawRect(ren, &body);
+
+        // Nose spoiler
+        float nx = x + 8.0f * cos_a;
+        float ny = y + 8.0f * sin_a;
         set_color(ren, COL_GOLD);
-        SDL_RenderDrawLine(ren, 241, 190, 241, 235);
+        SDL_RenderDrawLine(ren, (int)x, (int)y, (int)nx, (int)ny);
 
-        // P1 Car (Blue)
-        SDL_Rect c1 = {(int)p1_x - 5, (int)p1_y - 5, 10, 10};
-        set_color(ren, COL_BLUE);
-        SDL_RenderFillRect(ren, &c1);
+        // Driver helmet
+        draw_circle(ren, (int)x, (int)y, 2, COL_WHITE);
+    }
+
+    void render(SDL_Renderer *ren, GameMode mode) {
+        // Grass Backdrop
+        set_color(ren, Color(35, 95, 45));
+        SDL_Rect bg = {0, 0, SCR_W, SCR_H};
+        SDL_RenderFillRect(ren, &bg);
+
+        // Asphalt Track Outer (Center rect + 2 end semicircles)
+        set_color(ren, Color(55, 60, 72));
+        SDL_Rect straight = {120, 28, 240, 216};
+        SDL_RenderFillRect(ren, &straight);
+        draw_circle(ren, 120, 136, 107, Color(55, 60, 72));
+        draw_circle(ren, 360, 136, 107, Color(55, 60, 72));
+
+        // Outer white curb lines
         set_color(ren, COL_WHITE);
-        SDL_RenderDrawRect(ren, &c1);
+        SDL_RenderDrawLine(ren, 120, 28, 360, 28);
+        SDL_RenderDrawLine(ren, 120, 244, 360, 244);
+        draw_circle(ren, 120, 136, 107, COL_WHITE, false);
+        draw_circle(ren, 360, 136, 107, COL_WHITE, false);
 
-        // P2 Car (Red)
-        SDL_Rect c2 = {(int)p2_x - 5, (int)p2_y - 5, 10, 10};
-        set_color(ren, COL_RED);
-        SDL_RenderFillRect(ren, &c2);
+        // Infield Grass Island
+        set_color(ren, Color(35, 95, 45));
+        SDL_Rect infield = {120, 86, 240, 100};
+        SDL_RenderFillRect(ren, &infield);
+        draw_circle(ren, 120, 136, 49, Color(35, 95, 45));
+        draw_circle(ren, 360, 136, 49, Color(35, 95, 45));
+
+        // Inner white curb lines
         set_color(ren, COL_WHITE);
-        SDL_RenderDrawRect(ren, &c2);
+        SDL_RenderDrawLine(ren, 120, 86, 360, 86);
+        SDL_RenderDrawLine(ren, 120, 186, 360, 186);
+        draw_circle(ren, 120, 136, 49, COL_WHITE, false);
+        draw_circle(ren, 360, 136, 49, COL_WHITE, false);
 
+        // Center dashed racing line
+        set_color(ren, Color(110, 120, 135));
+        for (int lx = 130; lx <= 350; lx += 20) {
+            SDL_RenderDrawLine(ren, lx, 57, lx + 10, 57);
+            SDL_RenderDrawLine(ren, lx, 215, lx + 10, 215);
+        }
+
+        // Checkered Start / Finish Line (x = 240, y = 186 to 244)
+        for (int fy = 186; fy < 244; fy += 8) {
+            for (int fx = 237; fx < 243; fx += 3) {
+                bool white_tile = ((fx + fy) / 3) % 2 == 0;
+                set_color(ren, white_tile ? COL_WHITE : Color(20, 20, 20));
+                SDL_Rect chk = {fx, fy, 3, 8};
+                SDL_RenderFillRect(ren, &chk);
+            }
+        }
+
+        // Draw Racers
+        draw_racer(ren, p1_x, p1_y, p1_angle, COL_BLUE, "1");
+        draw_racer(ren, p2_x, p2_y, p2_angle, COL_RED, "2");
+
+        // Lap Counter HUD
         char sbuf[32];
         snprintf(sbuf, sizeof(sbuf), "LAP: %d/3   vs   %d/3", p1_laps, p2_laps);
         draw_centered_str(ren, SCR_W / 2, 130, sbuf, COL_WHITE, 1);
@@ -291,7 +465,7 @@ struct MicroRacersGame {
             draw_centered_str_p1(ren, 16, SCR_H / 2, "STEER & [L] GAS", COL_BLUE, 1);
             draw_centered_str_p2(ren, SCR_W - 16, SCR_H / 2, "STEER & [R] GAS", COL_RED, 1);
         } else {
-            draw_str(ren, 12, 12, "STEER: DPAD  |  GAS: [L] / UP", COL_GOLD, 1);
+            draw_str(ren, 12, 12, "STEER: DPAD  |  GAS: [X] / [L]", COL_GOLD, 1);
         }
     }
 };

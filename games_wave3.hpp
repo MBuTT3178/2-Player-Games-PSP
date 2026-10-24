@@ -51,10 +51,17 @@ struct SumoGame {
 
         // P1 Movement & Shove
         float speed = 1.6f;
-        if (pad.p1.up)    p1_vy -= speed;
-        if (pad.p1.down)  p1_vy += speed;
-        if (pad.p1.left)  p1_vx -= speed;
-        if (pad.p1.right) p1_vx += speed;
+        if (mode == MODE_2P_LOCAL) {
+            if (pad.p1.up)    p1_vx += speed; // towards opponent
+            if (pad.p1.down)  p1_vx -= speed; // towards back
+            if (pad.p1.left)  p1_vy -= speed; // North
+            if (pad.p1.right) p1_vy += speed; // South
+        } else {
+            if (pad.p1.up)    p1_vy -= speed;
+            if (pad.p1.down)  p1_vy += speed;
+            if (pad.p1.left)  p1_vx -= speed;
+            if (pad.p1.right) p1_vx += speed;
+        }
 
         if (pad.p1.action && p1_shove_cd <= 0.0f) {
             float dx = p2_x - p1_x, dy = p2_y - p1_y;
@@ -69,10 +76,10 @@ struct SumoGame {
 
         // P2 Movement & Shove (Human or AI)
         if (mode == MODE_2P_LOCAL) {
-            if (pad.p2.up)    p2_vy -= speed;
-            if (pad.p2.down)  p2_vy += speed;
-            if (pad.p2.left)  p2_vx -= speed;
-            if (pad.p2.right) p2_vx += speed;
+            if (pad.p2.up)    p2_vx -= speed; // towards opponent
+            if (pad.p2.down)  p2_vx += speed; // towards back
+            if (pad.p2.left)  p2_vy += speed; // South
+            if (pad.p2.right) p2_vy -= speed; // North
 
             if (pad.p2.action && p2_shove_cd <= 0.0f) {
                 float dx = p1_x - p2_x, dy = p1_y - p2_y;
@@ -229,17 +236,24 @@ struct SnakeGame {
         }
 
         // P1 Input
-        if (pad.p1.up    && p1_dir != 2) p1_next_dir = 0;
-        if (pad.p1.right && p1_dir != 3) p1_next_dir = 1;
-        if (pad.p1.down  && p1_dir != 0) p1_next_dir = 2;
-        if (pad.p1.left  && p1_dir != 1) p1_next_dir = 3;
+        if (mode == MODE_2P_LOCAL) {
+            if (pad.p1.up    && p1_dir != 3) p1_next_dir = 1; // forward -> East
+            if (pad.p1.down  && p1_dir != 1) p1_next_dir = 3; // back -> West
+            if (pad.p1.left  && p1_dir != 2) p1_next_dir = 0; // North
+            if (pad.p1.right && p1_dir != 0) p1_next_dir = 2; // South
+        } else {
+            if (pad.p1.up    && p1_dir != 2) p1_next_dir = 0;
+            if (pad.p1.right && p1_dir != 3) p1_next_dir = 1;
+            if (pad.p1.down  && p1_dir != 0) p1_next_dir = 2;
+            if (pad.p1.left  && p1_dir != 1) p1_next_dir = 3;
+        }
 
         // P2 Input (Human or AI)
         if (mode == MODE_2P_LOCAL) {
-            if (pad.p2.up    && p2_dir != 2) p2_next_dir = 0;
-            if (pad.p2.right && p2_dir != 3) p2_next_dir = 1;
-            if (pad.p2.down  && p2_dir != 0) p2_next_dir = 2;
-            if (pad.p2.left  && p2_dir != 1) p2_next_dir = 3;
+            if (pad.p2.up    && p2_dir != 1) p2_next_dir = 3; // forward -> West
+            if (pad.p2.down  && p2_dir != 3) p2_next_dir = 1; // back -> East
+            if (pad.p2.left  && p2_dir != 0) p2_next_dir = 2; // South
+            if (pad.p2.right && p2_dir != 2) p2_next_dir = 0; // North
         } else {
             // AI lookahead: check if current direction will crash
             int dx[4] = {0, 1, 0, -1};
@@ -355,6 +369,7 @@ struct RedHandsGame {
     int dodge_timer_p1, dodge_timer_p2;
     int round_over_timer;
     int ai_timer;
+    bool p1_prev, p2_prev;
 
     void reset(bool reset_match = true) {
         if (reset_match) { p1_score = 0; p2_score = 0; }
@@ -364,6 +379,7 @@ struct RedHandsGame {
         dodge_timer_p1 = 0; dodge_timer_p2 = 0;
         round_over_timer = 0;
         ai_timer = 0;
+        p1_prev = p2_prev = false;
     }
 
     void update(const GamePadState &pad, GameMode mode, int &match_winner) {
@@ -389,7 +405,6 @@ struct RedHandsGame {
         }
 
         // P1 Action
-        static bool p1_prev = false;
         if (pad.p1.action && !p1_prev && round_over_timer == 0) {
             if (attacker == 1) { // Slap!
                 p1_hand_pos = 70.0f;
@@ -411,7 +426,6 @@ struct RedHandsGame {
 
         // P2 Action (Human or AI)
         if (mode == MODE_2P_LOCAL) {
-            static bool p2_prev = false;
             if (pad.p2.action && !p2_prev && round_over_timer == 0) {
                 if (attacker == 2) { // Slap!
                     p2_hand_pos = 70.0f;
@@ -518,6 +532,7 @@ struct KnifeHitGame {
     int p1_score, p2_score;
     int round_over_timer;
     int ai_throw_timer;
+    bool p1_prev, p2_prev;
 
     const float LOG_R = 34.0f;
     const int T1_CX = 140, T1_CY = 85;
@@ -530,6 +545,7 @@ struct KnifeHitGame {
         p1_knives_left = 6; p2_knives_left = 6;
         round_over_timer = 0;
         ai_throw_timer = 0;
+        p1_prev = p2_prev = false;
     }
 
     bool throw_knife(int player) {
@@ -564,7 +580,6 @@ struct KnifeHitGame {
         log_angle_p2 += 0.035f;
 
         // P1 Throw
-        static bool p1_prev = false;
         if (pad.p1.action && !p1_prev && p1_knives_left > 0) {
             bool ok = throw_knife(1);
             if (ok) {
@@ -583,7 +598,6 @@ struct KnifeHitGame {
 
         // P2 Throw (Human or AI)
         if (mode == MODE_2P_LOCAL) {
-            static bool p2_prev = false;
             if (pad.p2.action && !p2_prev && p2_knives_left > 0) {
                 bool ok = throw_knife(2);
                 if (ok) {
@@ -824,6 +838,7 @@ struct SlingPuckGame {
     int p1_score, p2_score;
     int round_over_timer;
     int ai_pull_timer;
+    bool p1_prev, p2_prev;
 
     const float ARENA_X = 70.0f;
     const float ARENA_Y = 40.0f;
@@ -850,6 +865,7 @@ struct SlingPuckGame {
 
         round_over_timer = 0;
         ai_pull_timer = 0;
+        p1_prev = p2_prev = false;
     }
 
     void update(const GamePadState &pad, GameMode mode, int &match_winner) {
@@ -866,7 +882,6 @@ struct SlingPuckGame {
         float mid_x = ARENA_X + ARENA_W * 0.5f;
 
         // P1 Slingshot (Fires puck from left side towards center gate)
-        static bool p1_prev = false;
         if (pad.p1.action && !p1_prev) {
             for (auto &p : pucks) {
                 if (p.x < mid_x) { // Left half
@@ -887,7 +902,6 @@ struct SlingPuckGame {
 
         // P2 Slingshot (Human or AI)
         if (mode == MODE_2P_LOCAL) {
-            static bool p2_prev = false;
             if (pad.p2.action && !p2_prev) {
                 for (auto &p : pucks) {
                     if (p.x > mid_x) { // Right half

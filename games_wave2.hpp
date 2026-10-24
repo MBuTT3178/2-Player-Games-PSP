@@ -135,18 +135,27 @@ struct TicTacToeGame {
             return;
         }
 
-        bool u = false, d = false, l = false, r = false, act = false;
-        if (turn == 1) {
-            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
-        } else {
-            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
-        }
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
 
         if (input_delay == 0) {
-            if (u) { cursor_r = (cursor_r + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
-            else if (d) { cursor_r = (cursor_r + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
-            else if (l) { cursor_c = (cursor_c + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
-            else if (r) { cursor_c = (cursor_c + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+            if (mode == MODE_2P_LOCAL) {
+                if (turn == 1) {
+                    if (pad.p1.up)         { cursor_c = (cursor_c + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                    else if (pad.p1.down)  { cursor_c = (cursor_c + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                    else if (pad.p1.left)  { cursor_r = (cursor_r + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                    else if (pad.p1.right) { cursor_r = (cursor_r + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                } else {
+                    if (pad.p2.up)         { cursor_c = (cursor_c + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                    else if (pad.p2.down)  { cursor_c = (cursor_c + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                    else if (pad.p2.left)  { cursor_r = (cursor_r + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                    else if (pad.p2.right) { cursor_r = (cursor_r + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                }
+            } else {
+                if (pad.p1.up)         { cursor_r = (cursor_r + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                else if (pad.p1.down)  { cursor_r = (cursor_r + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                else if (pad.p1.left)  { cursor_c = (cursor_c + 2) % 3; input_delay = 10; play_tone(350.0f, 15); }
+                else if (pad.p1.right) { cursor_c = (cursor_c + 1) % 3; input_delay = 10; play_tone(350.0f, 15); }
+            }
         }
 
         if (act && input_delay == 0) {
@@ -397,16 +406,21 @@ struct Connect4Game {
             return;
         }
 
-        bool l = false, r = false, act = false;
-        if (turn == 1) {
-            l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
-        } else {
-            l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
-        }
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
 
         if (input_delay == 0) {
-            if (l) { cursor_col = (cursor_col + 6) % 7; input_delay = 10; play_tone(360.0f, 15); }
-            else if (r) { cursor_col = (cursor_col + 1) % 7; input_delay = 10; play_tone(360.0f, 15); }
+            if (mode == MODE_2P_LOCAL) {
+                if (turn == 1) {
+                    if (pad.p1.up || pad.p1.right)         { cursor_col = (cursor_col + 1) % 7; input_delay = 10; play_tone(360.0f, 15); }
+                    else if (pad.p1.down || pad.p1.left)   { cursor_col = (cursor_col + 6) % 7; input_delay = 10; play_tone(360.0f, 15); }
+                } else {
+                    if (pad.p2.down || pad.p2.right)       { cursor_col = (cursor_col + 1) % 7; input_delay = 10; play_tone(360.0f, 15); }
+                    else if (pad.p2.up || pad.p2.left)     { cursor_col = (cursor_col + 6) % 7; input_delay = 10; play_tone(360.0f, 15); }
+                }
+            } else {
+                if (pad.p1.left)  { cursor_col = (cursor_col + 6) % 7; input_delay = 10; play_tone(360.0f, 15); }
+                else if (pad.p1.right) { cursor_col = (cursor_col + 1) % 7; input_delay = 10; play_tone(360.0f, 15); }
+            }
         }
 
         if (act && input_delay == 0) {
@@ -632,11 +646,26 @@ struct DotsBoxesGame {
             return;
         }
 
-        bool u = false, d = false, l = false, r = false, act = false;
-        if (turn == 1) {
-            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
+        bool u = false, d = false, l = false, r = false;
+        if (mode == MODE_2P_LOCAL) {
+            if (turn == 1) {
+                r = pad.p1.up;    // Towards opponent (East)
+                l = pad.p1.down;  // Towards self (West)
+                u = pad.p1.left;  // North
+                d = pad.p1.right; // South
+            } else {
+                l = pad.p2.up;    // Towards opponent (West)
+                r = pad.p2.down;  // Towards self (East)
+                d = pad.p2.left;  // South
+                u = pad.p2.right; // North
+            }
         } else {
-            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
+            if (turn == 1) {
+                u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right;
+            } else {
+                u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right;
+            }
         }
 
         if (input_delay == 0) {
@@ -928,11 +957,26 @@ struct ReversiGame {
             return;
         }
 
-        bool u = false, d = false, l = false, r = false, act = false;
-        if (turn == 1) {
-            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
+        bool u = false, d = false, l = false, r = false;
+        if (mode == MODE_2P_LOCAL) {
+            if (turn == 1) {
+                r = pad.p1.up;    // Towards opponent (East)
+                l = pad.p1.down;  // Towards self (West)
+                u = pad.p1.left;  // North
+                d = pad.p1.right; // South
+            } else {
+                l = pad.p2.up;    // Towards opponent (West)
+                r = pad.p2.down;  // Towards self (East)
+                d = pad.p2.left;  // South
+                u = pad.p2.right; // North
+            }
         } else {
-            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
+            if (turn == 1) {
+                u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right;
+            } else {
+                u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right;
+            }
         }
 
         if (input_delay == 0) {
@@ -1148,11 +1192,26 @@ struct BattleshipGame {
             return;
         }
 
-        bool u = false, d = false, l = false, r = false, act = false;
-        if (turn == 1) {
-            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
+        bool u = false, d = false, l = false, r = false;
+        if (mode == MODE_2P_LOCAL) {
+            if (turn == 1) {
+                r = pad.p1.up;    // Towards opponent (East)
+                l = pad.p1.down;  // Towards self (West)
+                u = pad.p1.left;  // North
+                d = pad.p1.right; // South
+            } else {
+                l = pad.p2.up;    // Towards opponent (West)
+                r = pad.p2.down;  // Towards self (East)
+                d = pad.p2.left;  // South
+                u = pad.p2.right; // North
+            }
         } else {
-            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
+            if (turn == 1) {
+                u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right;
+            } else {
+                u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right;
+            }
         }
 
         if (input_delay == 0) {
@@ -1267,6 +1326,8 @@ struct TugOfWarGame {
     int p1_score, p2_score;
     int ai_mash_timer;
     int round_over_timer;
+    bool p1_prev_action, p1_prev_up;
+    bool p2_prev_action, p2_prev_up;
 
     void reset(bool reset_match = true) {
         if (reset_match) { p1_score = 0; p2_score = 0; }
@@ -1276,6 +1337,8 @@ struct TugOfWarGame {
         p2_mash = 0.0f;
         ai_mash_timer = 0;
         round_over_timer = 0;
+        p1_prev_action = p1_prev_up = false;
+        p2_prev_action = p2_prev_up = false;
     }
 
     void update(const GamePadState &pad, GameMode mode, int &match_winner) {
@@ -1289,8 +1352,6 @@ struct TugOfWarGame {
             return;
         }
 
-        static bool p1_prev_action = false;
-        static bool p1_prev_up = false;
         if ((pad.p1.action && !p1_prev_action) || (pad.p1.up && !p1_prev_up)) {
             p1_mash += 14.0f;
             if (p1_mash > 80.0f) p1_mash = 80.0f;
@@ -1300,8 +1361,6 @@ struct TugOfWarGame {
         p1_prev_up = pad.p1.up;
 
         if (mode == MODE_2P_LOCAL) {
-            static bool p2_prev_action = false;
-            static bool p2_prev_up = false;
             if ((pad.p2.action && !p2_prev_action) || (pad.p2.up && !p2_prev_up)) {
                 p2_mash += 14.0f;
                 if (p2_mash > 80.0f) p2_mash = 80.0f;

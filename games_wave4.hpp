@@ -478,18 +478,27 @@ struct SoccerGame {
         }
 
         // P1 Controls: run and jump
-        if (pad.p1.left)  p1_x -= 2.0f;
-        if (pad.p1.right) p1_x += 2.0f;
-        if ((pad.p1.action || pad.p1.up) && p1_y >= 189.0f) {
-            p1_vy = -6.5f;
-            play_tone(420.0f, 25);
+        if (mode == MODE_2P_LOCAL) {
+            if (pad.p1.up)    p1_x += 2.0f; // forward towards opponent
+            if (pad.p1.down)  p1_x -= 2.0f; // back towards own goal
+            if ((pad.p1.action || pad.p1.left) && p1_y >= 189.0f) {
+                p1_vy = -6.5f;
+                play_tone(420.0f, 25);
+            }
+        } else {
+            if (pad.p1.left)  p1_x -= 2.0f;
+            if (pad.p1.right) p1_x += 2.0f;
+            if ((pad.p1.action || pad.p1.up) && p1_y >= 189.0f) {
+                p1_vy = -6.5f;
+                play_tone(420.0f, 25);
+            }
         }
 
         // P2 Controls
         if (mode == MODE_2P_LOCAL) {
-            if (pad.p2.left)  p2_x -= 2.0f;
-            if (pad.p2.right) p2_x += 2.0f;
-            if ((pad.p2.action || pad.p2.up) && p2_y >= 189.0f) {
+            if (pad.p2.up)    p2_x -= 2.0f; // forward towards opponent
+            if (pad.p2.down)  p2_x += 2.0f; // back towards own goal
+            if ((pad.p2.action || pad.p2.right) && p2_y >= 189.0f) {
                 p2_vy = -6.5f;
                 play_tone(400.0f, 25);
             }

@@ -2,7 +2,7 @@
 
 A native C++11 and SDL2 Sony PlayStation Portable (PSP) homebrew port of the hit local multiplayer party game **"2 Player Games: The Challenge"** (originally by JindoBlu). 
 
-Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 16MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **18 complete minigames** arranged in an expandable 3-page grid carousel.
+Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 16MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **24 complete minigames** arranged in an expandable 4-page grid carousel.
 
 <p align="center">
   <img src="screenshot.png" alt="2 Player Games PSP Edition" width="760"/>
@@ -25,7 +25,7 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 | **5. Checkers (Dama)** | **6. Chess (Royal Tactics)** |
 |:---:|:---:|
 | <img src="screenshot_checkers.png" alt="Checkers" width="460"/> | <img src="screenshot_chess.png" alt="Chess" width="460"/> |
-| *8×8 board, diagonal steps, jump captures & King crowns* | *Vector piece silhouettes, ray validation, checks & smart AI* |
+| *8×8 board, diagonal steps, crowned Kings & free piece selection* | *Vector piece silhouettes, ray validation, checks & smart AI* |
 
 | **7. Tic-Tac-Toe (Tris)** | **8. Connect 4 (Four in a Row)** |
 |:---:|:---:|
@@ -37,21 +37,36 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 | <img src="screenshot_sumo.png" alt="Sumo Wrestling" width="460"/> | <img src="screenshot_quickdraw.png" alt="Quick Draw" width="460"/> |
 | *Circular sand ring, shoving momentum & ring-out physics* | *High-noon standoff, signal reaction & misfire penalties* |
 
-| **11. Sling Puck (Finger Hockey)** | **12. Main Menu (3-Page Carousel)** |
+| **11. Sling Puck (Finger Hockey)** | **12. Penalty Shootout** |
 |:---:|:---:|
-| <img src="screenshot_slingpuck.png" alt="Sling Puck" width="460"/> | <img src="screenshot_menu.png" alt="Main Menu" width="460"/> |
-| *Hardwood board, elastic cords & center partition slot* | *3-page carousel with [L/R] instant page flip* |
+| <img src="screenshot_slingpuck.png" alt="Sling Puck" width="460"/> | <img src="screenshot_penalty.png" alt="Penalty Shootout" width="460"/> |
+| *Hardwood board, elastic cords & center partition slot* | *Striker vs diving goalkeeper, oscillating aim & goal netting* |
+
+| **13. Micro Racers (Circuit Sprint)** | **14. Basketball (Arc Shootout)** |
+|:---:|:---:|
+| <img src="screenshot_microracers.png" alt="Micro Racers" width="460"/> | <img src="screenshot_basketball.png" alt="Basketball Shootout" width="460"/> |
+| *Top-down formula sprint, tire drifts & checkered laps* | *Parabolic trajectory physics, backboard/rim deflection* |
+
+| **15. Bouncy Soccer (1v1 Football)** | **16. Bowling (10-Pin Lane)** |
+|:---:|:---:|
+| <img src="screenshot_soccer.png" alt="Bouncy Soccer" width="460"/> | <img src="screenshot_bowling.png" alt="Bowling" width="460"/> |
+| *Ragdoll physics, header jumps, goal post ricochets* | *Perspective hardwood lane, pin scatter & hook delivery* |
+
+| **17. Darts (301 Duel)** | **18. Main Menu (4-Page Carousel)** |
+|:---:|:---:|
+| <img src="screenshot_darts.png" alt="Darts Target" width="460"/> | <img src="screenshot_menu.png" alt="Main Menu" width="460"/> |
+| *Dual-axis crosshair lock, bullseye & score countdown* | *4-page carousel with [L/R Triggers] instant flip* |
 
 ---
 
-## Minigame Collection (18 Games)
+## Minigame Collection (24 Games Total)
 
 ### Page 1: Arcade & Action Classics
 1. **Ping Pong (Table Tennis):** Classic paddle rally battle with dynamic deflection angle physics and escalating volley velocity. First to 5 points wins.
 2. **Air Hockey:** Full 2D arena hockey table with circular mallet and puck collision physics, boundary rebounds, goal pockets, and high-velocity smash strikes. First to 5 goals wins.
 3. **Spinner War (Beyblade Sumo):** Floating circular ring arena battle. Steer high-torque spinning tops with blade collision impulses and Turbo Boost charges to knock the opponent into the void. First to 3 knockouts wins.
 4. **Tank Battle:** Tactical battlefield with 6 brick barricades. Navigate top-down tanks and fire ricocheting cannon shells that bounce off perimeter and obstacle walls. First to 5 kills wins.
-5. **Checkers (Dama):** Authentic 8×8 tournament checkers. Forward diagonal strides, mandatory jump captures over opponent pieces, and crowning Kings upon reaching the baseline.
+5. **Checkers (Dama):** Authentic 8×8 tournament checkers. Forward diagonal strides, jump captures over opponent pieces, crowning Kings upon reaching the baseline, and free selection across all valid moves.
 6. **Chess:** Complete royal strategy chess featuring Pawns, Knights, Bishops, Rooks, Queens, and Kings rendered with detailed vector silhouettes. Strict check detection, piece-square evaluation AI, and promotion mechanics.
 
 ### Page 2: Tabletop & Strategy (Wave 2)
@@ -69,6 +84,14 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 16. **Knife Hit:** Dual rotating timber targets. Race to stick all 6 knives into the revolving wood wheel without clipping previously embedded blades.
 17. **Western Quick Draw:** Standoff at high noon. Wait for the sudden gong signal and draw your revolver before your opponent, avoiding fatal early draw fouls.
 18. **Sling Puck:** Fast-paced finger hockey. Fling pucks using elastic bands across a wooden arena through a narrow center partition gate. First to clear all pucks from their half wins.
+
+### Page 4: Sports & Targets (Wave 4)
+19. **Penalty Shootout:** Striker vs Goalkeeper showdown. Time your shot along an oscillating aim arc while the keeper anticipates the dive angle.
+20. **Micro Racers:** Top-down circuit sprint racing. Counter-steer through asphalt corners, manage drift physics, and cross the checkered finish line first across 3 laps.
+21. **Basketball Shootout:** Timed release arc shot. Launch basketballs along realistic parabolic gravity curves toward backboards and hoop rims. First to 5 baskets wins.
+22. **Bouncy Soccer:** Head-to-head 1v1 ragdoll football. Run, jump, and execute diving headers to knock the ball into the opponent's goal net.
+23. **Bowling:** Perspective hardwood 10-pin lane. Steer your delivery curve and hit the pocket to scatter pins and achieve a clean strike.
+24. **Darts (301 Target Duel):** Precision dartboard showdown. Lock your horizontal and vertical crosshairs to strike triples, doubles, and the bullseye to count down to zero.
 
 ---
 

@@ -307,7 +307,7 @@ def make_screenshot_menu():
     c.draw_centered_str(W // 2 + 1, 15, "2 PLAYER GAMES", COL_SHADOW, 3)
     c.draw_centered_str(W // 2, 14, "2 PLAYER GAMES", COL_GOLD, 3)
     c.draw_centered_str(W // 2, 38, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
-    c.draw_centered_str(W // 2, 54, "PAGE 1/3: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
+    c.draw_centered_str(W // 2, 54, "PAGE 1/4: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
 
     titles1 = ["PING", "AIR", "SPINNER", "TANK", "CHECKERS", "ROYAL"]
     titles2 = ["PONG", "HOCKEY", "WAR", "BATTLE", "DAMA", "CHESS"]
@@ -343,7 +343,7 @@ def make_screenshot_menu():
 
     c.draw_centered_str(W // 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1)
     c.draw_centered_str(W // 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1)
-    c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3)", COL_GOLD, 1)
+    c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3 / 4)", COL_GOLD, 1)
 
     c.save_png("screenshot_menu.png")
     c.save_png("screenshot.png")
@@ -870,6 +870,205 @@ def make_screenshot_slingpuck():
     c.save_png("screenshot_slingpuck.png")
 
 
+# ─── 14. PENALTY SHOOTOUT SCREENSHOT ──────────────────────────────────
+def make_screenshot_penalty():
+    c = Canvas()
+    c.fill_rect(40, 30, W - 80, 210, (35, 110, 50))
+    c.draw_rect(40, 30, W - 80, 210, COL_WHITE)
+
+    # Goal box
+    c.draw_rect(130, 50, 220, 110, COL_WHITE)
+    c.draw_circle(240, 205, 3, COL_WHITE)
+
+    # Goal frame
+    gx, gy, gw, gh = 150, 50, 180, 75
+    c.fill_rect(gx, gy, gw, gh, (22, 60, 35))
+    c.draw_rect(gx, gy, gw, gh, COL_WHITE)
+
+    # Net mesh
+    for x in range(gx + 15, gx + gw, 15):
+        c.draw_line(x, gy, x, gy + gh, (60, 140, 80))
+    for y in range(gy + 15, gy + gh, 15):
+        c.draw_line(gx, y, gx + gw, y, (60, 140, 80))
+
+    # Goalkeeper (Red, diving slightly left)
+    c.draw_circle(225, gy + gh - 18, 10, COL_RED)
+    c.draw_circle(225 - 12, gy + gh - 18, 4, COL_GOLD)
+    c.draw_circle(225 + 12, gy + gh - 18, 4, COL_GOLD)
+
+    # Aim reticle
+    c.draw_circle(270, 80, 8, COL_GOLD, False)
+    c.draw_line(265, 80, 275, 80, COL_GOLD)
+    c.draw_line(270, 75, 270, 85, COL_GOLD)
+
+    # Ball in flight
+    c.draw_circle(255, 145, 9, COL_WHITE)
+    c.draw_circle(255, 145, 9, (20, 20, 20), False)
+
+    c.draw_centered_str(W // 2, 14, "P1: 2  vs  P2: 1", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "KICK [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "DEFEND", COL_RED, 1)
+
+    c.save_png("screenshot_penalty.png")
+
+
+# ─── 15. MICRO RACERS SCREENSHOT ──────────────────────────────────────
+def make_screenshot_microracers():
+    c = Canvas()
+    # Outer track
+    c.fill_rect(40, 30, W - 80, 210, (40, 42, 50))
+    c.draw_rect(40, 30, W - 80, 210, COL_WHITE)
+
+    # Red/White curb edges
+    for x in range(40, W - 40, 16):
+        c.fill_rect(x, 26, 8, 4, COL_RED)
+        c.fill_rect(x + 8, 26, 8, 4, COL_WHITE)
+        c.fill_rect(x, 240, 8, 4, COL_RED)
+        c.fill_rect(x + 8, 240, 8, 4, COL_WHITE)
+
+    # Infield grass island
+    c.fill_rect(110, 80, W - 220, 110, (35, 105, 45))
+    c.draw_rect(110, 80, W - 220, 110, COL_WHITE)
+
+    # Checkered finish line
+    for y in range(190, 240, 6):
+        c.fill_rect(240, y, 6, 6, COL_WHITE if (y // 6) % 2 == 0 else (20, 20, 20))
+
+    # Blue racer drifting
+    c.fill_rect(190, 202, 12, 10, COL_BLUE)
+    c.draw_rect(190, 202, 12, 10, COL_WHITE)
+
+    # Red racer following
+    c.fill_rect(160, 216, 12, 10, COL_RED)
+    c.draw_rect(160, 216, 12, 10, COL_WHITE)
+
+    c.draw_centered_str(W // 2, 130, "LAP: 2/3   vs   2/3", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "STEER & [L] GAS", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "STEER & [R] GAS", COL_RED, 1)
+
+    c.save_png("screenshot_microracers.png")
+
+
+# ─── 16. BASKETBALL SHOOTOUT SCREENSHOT ───────────────────────────────
+def make_screenshot_basketball():
+    c = Canvas()
+    # Hardwood floor
+    c.fill_rect(40, 180, W - 80, 50, (185, 135, 75))
+    c.draw_line(40, 180, W - 40, 180, COL_WHITE)
+
+    # Backboard & Rim
+    bx, by = 240, 70
+    c.fill_rect(bx - 18, by - 30, 36, 25, COL_WHITE)
+    c.draw_rect(bx - 18, by - 30, 36, 25, COL_BORDER)
+
+    # Rim
+    c.fill_rect(bx - 12, by, 24, 4, (225, 80, 30))
+    c.draw_line(bx - 10, by + 4, bx - 4, by + 16, COL_WHITE)
+    c.draw_line(bx + 10, by + 4, bx + 4, by + 16, COL_WHITE)
+
+    # Balls in air
+    c.draw_circle(215, 88, 8, (230, 110, 30)) # Blue shot peaking towards rim
+    c.draw_circle(330, 160, 8, (230, 110, 30)) # Red shot rising
+
+    c.draw_centered_str(W // 2, 20, "P1: 4/5   vs   P2: 3/5", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "SHOOT [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "SHOOT [R]", COL_RED, 1)
+
+    c.save_png("screenshot_basketball.png")
+
+
+# ─── 17. BOUNCY SOCCER SCREENSHOT ─────────────────────────────────────
+def make_screenshot_soccer():
+    c = Canvas()
+    # Pitch
+    c.fill_rect(40, 200, 400, 30, (40, 115, 55))
+    c.draw_line(40, 200, 440, 200, COL_WHITE)
+
+    # Goals
+    c.draw_rect(40, 140, 15, 60, COL_WHITE)
+    c.draw_rect(425, 140, 15, 60, COL_WHITE)
+
+    # Blue Player jumping
+    p1_x, p1_y = 175, 165
+    c.draw_circle(p1_x, p1_y - 14, 8, COL_BLUE)
+    c.fill_rect(p1_x - 6, p1_y - 6, 12, 14, COL_BLUE)
+
+    # Red Player defending
+    p2_x, p2_y = 295, 190
+    c.draw_circle(p2_x, p2_y - 14, 8, COL_RED)
+    c.fill_rect(p2_x - 6, p2_y - 6, 12, 14, COL_RED)
+
+    # Ball in header arc
+    c.draw_circle(205, 150, 8, COL_WHITE)
+    c.draw_circle(205, 150, 8, (20, 20, 20), False)
+
+    c.draw_centered_str(W // 2, 20, "P1: 2  vs  P2: 1", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "JUMP & KICK [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "JUMP & KICK [R]", COL_RED, 1)
+
+    c.save_png("screenshot_soccer.png")
+
+
+# ─── 18. BOWLING SCREENSHOT ───────────────────────────────────────────
+def make_screenshot_bowling():
+    c = Canvas()
+    # Lane
+    c.fill_rect(190, 50, 100, 175, (175, 130, 80))
+    c.draw_rect(190, 50, 100, 175, (90, 50, 20))
+
+    # Pins
+    pin_pos = [
+        (240, 55),
+        (233, 62), (247, 62),
+        (226, 69), (240, 69), (254, 69),
+        (219, 76), (233, 76), (247, 76), (261, 76)
+    ]
+    for px, py in pin_pos:
+        c.draw_circle(px, py, 4, COL_WHITE)
+        c.draw_circle(px, py, 2, COL_RED)
+
+    # Rolling ball
+    c.draw_circle(238, 140, 8, COL_BLUE)
+    c.draw_circle(238, 140, 8, COL_WHITE, False)
+
+    c.draw_centered_str(W // 2, 20, "P1: 7 PINS   vs   P2: 6 PINS", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "ROLL [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "WAITING", COL_RED, 1)
+
+    c.save_png("screenshot_bowling.png")
+
+
+# ─── 19. DARTS TARGET SCREENSHOT ──────────────────────────────────────
+def make_screenshot_darts():
+    c = Canvas()
+    bx, by, br = 240, 115, 60
+
+    c.draw_circle(bx, by, br + 6, (20, 20, 20))
+    c.draw_circle(bx, by, br, (220, 215, 185))
+    c.draw_circle(bx, by, br, COL_BORDER, False)
+    c.draw_circle(bx, by, br - 15, (180, 40, 40), False)
+    c.draw_circle(bx, by, 20, (40, 140, 60), False)
+    c.draw_circle(bx, by, 8, (200, 30, 30))
+
+    # Crosshairs
+    ch_x, ch_y = 244, 98
+    c.draw_circle(ch_x, ch_y, 6, COL_GOLD, False)
+    c.draw_line(ch_x - 4, ch_y, ch_x + 4, ch_y, COL_GOLD)
+    c.draw_line(ch_x, ch_y - 4, ch_x, ch_y + 4, COL_GOLD)
+
+    c.draw_centered_str(W // 2, 20, "P1: 142   vs   P2: 180", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "LOCK [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "WAITING", COL_RED, 1)
+
+    c.save_png("screenshot_darts.png")
+
+
 if __name__ == "__main__":
     make_screenshot_menu()
     make_screenshot_pingpong()
@@ -884,4 +1083,10 @@ if __name__ == "__main__":
     make_screenshot_sumo()
     make_screenshot_quickdraw()
     make_screenshot_slingpuck()
-    print("All 13 screenshots generated successfully.")
+    make_screenshot_penalty()
+    make_screenshot_microracers()
+    make_screenshot_basketball()
+    make_screenshot_soccer()
+    make_screenshot_bowling()
+    make_screenshot_darts()
+    print("All 19 screenshots generated successfully.")

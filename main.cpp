@@ -310,6 +310,12 @@ enum MinigameType {
     GAME_KNIFEHIT,
     GAME_QUICKDRAW,
     GAME_SLINGPUCK,
+    GAME_PENALTY,
+    GAME_MICRORACERS,
+    GAME_BASKETBALL,
+    GAME_SOCCER,
+    GAME_BOWLING,
+    GAME_DARTS,
     GAME_COUNT
 };
 
@@ -1094,7 +1100,9 @@ struct CheckersGame {
                 }
             }
         }
-        return cap_m.empty() ? reg_m : cap_m;
+        std::vector<CheckersMove> all_m = cap_m;
+        for (const auto &m : reg_m) all_m.push_back(m);
+        return all_m;
     }
 
     void execute_move(const CheckersMove &m) {
@@ -1152,18 +1160,27 @@ struct CheckersGame {
             return;
         }
 
-        bool u = false, d = false, l = false, r = false, act = false;
-        if (turn == 1) {
-            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
-        } else {
-            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
-        }
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
 
         if (input_delay == 0) {
-            if (u) { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
-            else if (d) { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
-            else if (l) { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
-            else if (r) { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            if (mode == MODE_2P_LOCAL) {
+                if (turn == 1) {
+                    if (pad.p1.up)         { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p1.down)  { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p1.left)  { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p1.right) { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                } else {
+                    if (pad.p2.up)         { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p2.down)  { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p2.left)  { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p2.right) { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                }
+            } else {
+                if (pad.p1.up)         { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                else if (pad.p1.down)  { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                else if (pad.p1.left)  { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                else if (pad.p1.right) { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            }
         }
 
         if (act && input_delay == 0) {
@@ -1590,18 +1607,27 @@ struct ChessGame {
             return;
         }
 
-        bool u = false, d = false, l = false, r = false, act = false;
-        if (turn == 1) {
-            u = pad.p1.up; d = pad.p1.down; l = pad.p1.left; r = pad.p1.right; act = pad.p1.action;
-        } else {
-            u = pad.p2.up; d = pad.p2.down; l = pad.p2.left; r = pad.p2.right; act = pad.p2.action;
-        }
+        bool act = (turn == 1) ? pad.p1.action : pad.p2.action;
 
         if (input_delay == 0) {
-            if (u) { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
-            else if (d) { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
-            else if (l) { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
-            else if (r) { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            if (mode == MODE_2P_LOCAL) {
+                if (turn == 1) {
+                    if (pad.p1.up)         { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p1.down)  { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p1.left)  { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p1.right) { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                } else {
+                    if (pad.p2.up)         { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p2.down)  { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p2.left)  { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                    else if (pad.p2.right) { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                }
+            } else {
+                if (pad.p1.up)         { cursor_r = (cursor_r + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                else if (pad.p1.down)  { cursor_r = (cursor_r + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                else if (pad.p1.left)  { cursor_c = (cursor_c + 7) % 8; input_delay = 9; play_tone(320.0f, 15); }
+                else if (pad.p1.right) { cursor_c = (cursor_c + 1) % 8; input_delay = 9; play_tone(320.0f, 15); }
+            }
         }
 
         if (act && input_delay == 0) {
@@ -1717,6 +1743,7 @@ struct ChessGame {
 
 #include "games_wave2.hpp"
 #include "games_wave3.hpp"
+#include "games_wave4.hpp"
 
 struct App {
     AppState state;
@@ -1743,6 +1770,12 @@ struct App {
     KnifeHitGame knifehit;
     QuickDrawGame quickdraw;
     SlingPuckGame slingpuck;
+    PenaltyGame penalty;
+    MicroRacersGame microracers;
+    BasketballGame basketball;
+    SoccerGame soccer;
+    BowlingGame bowling;
+    DartsGame darts;
 
     void init() {
         state = STATE_MENU;
@@ -1773,6 +1806,12 @@ struct App {
         if (selected_game == GAME_KNIFEHIT)   knifehit.reset(true);
         if (selected_game == GAME_QUICKDRAW)  quickdraw.reset(true);
         if (selected_game == GAME_SLINGPUCK)  slingpuck.reset(true);
+        if (selected_game == GAME_PENALTY)    penalty.reset(true);
+        if (selected_game == GAME_MICRORACERS) microracers.reset(true);
+        if (selected_game == GAME_BASKETBALL) basketball.reset(true);
+        if (selected_game == GAME_SOCCER)     soccer.reset(true);
+        if (selected_game == GAME_BOWLING)    bowling.reset(true);
+        if (selected_game == GAME_DARTS)      darts.reset(true);
     }
 
     void update(const GamePadState &pad) {
@@ -1851,6 +1890,12 @@ struct App {
             if (selected_game == GAME_KNIFEHIT)   knifehit.update(pad, mode, winner);
             if (selected_game == GAME_QUICKDRAW)  quickdraw.update(pad, mode, winner);
             if (selected_game == GAME_SLINGPUCK)  slingpuck.update(pad, mode, winner);
+            if (selected_game == GAME_PENALTY)    penalty.update(pad, mode, winner);
+            if (selected_game == GAME_MICRORACERS) microracers.update(pad, mode, winner);
+            if (selected_game == GAME_BASKETBALL) basketball.update(pad, mode, winner);
+            if (selected_game == GAME_SOCCER)     soccer.update(pad, mode, winner);
+            if (selected_game == GAME_BOWLING)    bowling.update(pad, mode, winner);
+            if (selected_game == GAME_DARTS)      darts.update(pad, mode, winner);
 
             if (winner != 0) {
                 state = STATE_GAMEOVER;
@@ -1893,6 +1938,12 @@ struct App {
         if (selected_game == GAME_KNIFEHIT)   knifehit.render(ren, mode);
         if (selected_game == GAME_QUICKDRAW)  quickdraw.render(ren, mode);
         if (selected_game == GAME_SLINGPUCK)  slingpuck.render(ren, mode);
+        if (selected_game == GAME_PENALTY)    penalty.render(ren, mode);
+        if (selected_game == GAME_MICRORACERS) microracers.render(ren, mode);
+        if (selected_game == GAME_BASKETBALL) basketball.render(ren, mode);
+        if (selected_game == GAME_SOCCER)     soccer.render(ren, mode);
+        if (selected_game == GAME_BOWLING)    bowling.render(ren, mode);
+        if (selected_game == GAME_DARTS)      darts.render(ren, mode);
     }
 
     void render(SDL_Renderer *ren) {
@@ -1905,23 +1956,27 @@ struct App {
             int page_start = current_page * 6;
             char page_hdr[64];
             if (current_page == 0) {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 1/3: ARCADE & CLASSICS  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 1/4: ARCADE & CLASSICS  [L/R PAGE]");
             } else if (current_page == 1) {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 2/3: TABLETOP & STRATEGY  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 2/4: TABLETOP & STRATEGY  [L/R PAGE]");
+            } else if (current_page == 2) {
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 3/4: BRAWLERS & REFLEXES  [L/R PAGE]");
             } else {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 3/3: BRAWLERS & REFLEXES  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 4/4: SPORTS & TARGETS  [L/R PAGE]");
             }
             draw_centered_str(ren, SCR_W / 2, 54, page_hdr, COL_GOLD, 1);
 
             const char *titles1[GAME_COUNT] = {
                 "PING",    "AIR",    "SPINNER", "TANK",   "CHECKERS", "ROYAL",
                 "TIC TAC", "CONNECT", "DOTS &",  "REVERSI", "BATTLE",  "TUG OF",
-                "SUMO",    "NEON",   "RED",     "KNIFE",  "QUICK",   "SLING"
+                "SUMO",    "NEON",   "RED",     "KNIFE",  "QUICK",   "SLING",
+                "PENALTY", "MICRO",  "BASKET",  "BOUNCY", "TEN PIN", "BULLSEYE"
             };
             const char *titles2[GAME_COUNT] = {
                 "PONG",    "HOCKEY", "WAR",     "BATTLE", "DAMA",     "CHESS",
                 "TOE",     "FOUR",   "BOXES",   "OTHELLO", "SHIP",    "WAR",
-                "RING",    "SNAKE",  "HANDS",   "HIT",    "DRAW",    "PUCK"
+                "RING",    "SNAKE",  "HANDS",   "HIT",    "DRAW",    "PUCK",
+                "KICK",    "RACERS", "BALL",    "SOCCER", "BOWLING", "DARTS"
             };
             const char *descs[GAME_COUNT] = {
                 "CLASSIC PADDLE RALLY BATTLE",
@@ -1941,7 +1996,13 @@ struct App {
                 "REFLEX HAND SLAP & DODGE DUEL",
                 "ROTATING TIMBER KNIFE THROW",
                 "HIGH NOON WESTERN SHOOTOUT",
-                "FAST FINGER HOCKEY GATE FLING"
+                "FAST FINGER HOCKEY GATE FLING",
+                "GOALKEEPER VS STRIKER SHOOTOUT",
+                "DRIFT FORMULA CIRCUIT SPRINT",
+                "TIMED ARC GRAVITY HOOP SHOOTOUT",
+                "HEAD & KICK RAGDOLL FOOTBALL",
+                "PERSPECTIVE 10-PIN STRIKE DUEL",
+                "PRECISION 301 TARGET BOARD"
             };
 
             for (int idx = 0; idx < 6; idx++) {
@@ -1988,7 +2049,7 @@ struct App {
                 draw_centered_str(ren, SCR_W / 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1);
             }
             draw_centered_str(ren, SCR_W / 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1);
-            draw_centered_str(ren, SCR_W / 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3)", COL_GOLD, 1);
+            draw_centered_str(ren, SCR_W / 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3 / 4)", COL_GOLD, 1);
 
         } else if (state == STATE_PLAYING) {
             render_active_game(ren);

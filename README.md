@@ -2,7 +2,7 @@
 
 A native C++11 and SDL2 Sony PlayStation Portable (PSP) homebrew port of the hit local multiplayer party game **"2 Player Games: The Challenge"** (originally by JindoBlu). 
 
-Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 16MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **24 complete minigames** arranged in an expandable 4-page grid carousel.
+Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 16MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **30 complete minigames** arranged in an expandable 5-page grid carousel, complete with **Tournament Cup Series Mode** (Best of 3, Best of 5, Best of 7, Decathlon) and **Persistent Memory Stick Save Data & Records**.
 
 <p align="center">
   <img src="screenshot.png" alt="2 Player Games PSP Edition" width="760"/>
@@ -52,14 +52,14 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 | <img src="screenshot_soccer.png" alt="Bouncy Soccer" width="460"/> | <img src="screenshot_bowling.png" alt="Bowling" width="460"/> |
 | *Ragdoll physics, header jumps, goal post ricochets* | *Perspective hardwood lane, pin scatter & hook delivery* |
 
-| **17. Darts (301 Duel)** | **18. Main Menu (4-Page Carousel)** |
+| **17. Darts (301 Duel)** | **18. Main Menu (5-Page Carousel)** |
 |:---:|:---:|
 | <img src="screenshot_darts.png" alt="Darts Target" width="460"/> | <img src="screenshot_menu.png" alt="Main Menu" width="460"/> |
-| *Dual-axis crosshair lock, bullseye & score countdown* | *4-page carousel with [L/R Triggers] instant flip* |
+| *Dual-axis crosshair lock, bullseye & score countdown* | *5-page carousel with [L/R Triggers] instant flip* |
 
 ---
 
-## Minigame Collection (24 Games Total)
+## Minigame Collection (30 Games Total)
 
 ### Page 1: Arcade & Action Classics
 1. **Ping Pong (Table Tennis):** Classic paddle rally battle with dynamic deflection angle physics and escalating volley velocity. First to 5 points wins.
@@ -92,6 +92,32 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 22. **Bouncy Soccer:** Head-to-head 1v1 ragdoll football. Run, jump, and execute diving headers to knock the ball into the opponent's goal net.
 23. **Bowling:** Perspective hardwood 10-pin lane. Steer your delivery curve and hit the pocket to scatter pins and achieve a clean strike.
 24. **Darts (301 Target Duel):** Precision dartboard showdown. Lock your horizontal and vertical crosshairs to strike triples, doubles, and the bullseye to count down to zero.
+
+### Page 5: Leisure & Bonuses (Wave 5)
+25. **Pinball Duel:** Opposing dual-flipper pinball cabinet. Control bottom flippers while your opponent defends the top. Center bumpers, multi-bounce velocities, and gutter scoring.
+26. **8-Ball Pool (Billiards):** Overhead billiard table with 6 pockets. Rotate cue aim angle and hold action button to meter cue power. Realistic elastic ball collisions and cushion reflections.
+27. **Mini Golf:** Putting green duel with moving windmill obstacle, sand bunkers, and angled walls. Meter your stroke power to sink the golf ball in fewer strokes.
+28. **Memory Cards:** 4×4 card grid with 8 hidden symbol pairs. Alternate turns flipping cards to match geometric icons; matches reward an extra turn!
+29. **Arm Wrestling:** Intense table arm-wrestling battle. Rapidly mash action while managing muscle stamina; trigger power surge windows to slam the table down for victory.
+30. **Curve Racer (Achtung Duel):** Steer growing neon curves across an open arena. Random gap generation allows slipping through trails; avoid crashing into perimeter walls or opponent trails.
+
+---
+
+## Championship Cup & Tournament Engine
+Toggle between Standard Single Match and Championship Tournament mode via **\[$\square$\] SQUARE** in the main menu:
+- **Best of 3 Cup:** First to 2 minigame victories wins the trophy.
+- **Best of 5 Cup:** First to 3 minigame victories wins the trophy.
+- **Best of 7 Cup:** First to 4 minigame victories wins the trophy.
+- **Decathlon Series:** 10-game endurance marathon across randomized minigames.
+- **Standings & Trophy Podium:** Dynamic series scoreboard between rounds, followed by a grand Golden Trophy presentation on the winner's podium.
+
+---
+
+## Persistent Save Data & Trophy Records
+Press **\[$\triangle$\] TRIANGLE** in the main menu to open the Lifetime Records & Trophies screen:
+- **Lifetime Win/Loss Tracker:** Tracks total matches played, Player 1 wins, Player 2 / AI wins, and Tournament Cups won.
+- **Head-to-Head Ratio Bar:** Visual color-coded win distribution bar.
+- **Memory Stick Persistence:** Automatically saved to `ms0:/PSP/SAVEDATA/2PLAY0000/records.dat`.
 
 ---
 

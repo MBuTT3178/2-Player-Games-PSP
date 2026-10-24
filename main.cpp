@@ -316,6 +316,12 @@ enum MinigameType {
     GAME_SOCCER,
     GAME_BOWLING,
     GAME_DARTS,
+    GAME_PINBALL,
+    GAME_POOL,
+    GAME_MINIGOLF,
+    GAME_MEMORY,
+    GAME_ARMWRESTLE,
+    GAME_CURVERACER,
     GAME_COUNT
 };
 
@@ -324,12 +330,59 @@ enum GameMode {
     MODE_2P_LOCAL = 1
 };
 
+enum TournamentType {
+    TOURNEY_OFF = 0,
+    TOURNEY_BO3,
+    TOURNEY_BO5,
+    TOURNEY_BO7,
+    TOURNEY_DECATHLON,
+    TOURNEY_TYPE_COUNT
+};
+
 enum AppState {
     STATE_MENU = 0,
     STATE_PLAYING,
     STATE_PAUSED,
-    STATE_GAMEOVER
+    STATE_GAMEOVER,
+    STATE_TOURNEY_STANDINGS,
+    STATE_TOURNEY_PODIUM,
+    STATE_RECORDS
 };
+
+struct RecordsData {
+    int total_matches;
+    int p1_wins;
+    int p2_wins;
+    int tourneys_p1_won;
+    int tourneys_p2_won;
+    int per_game_p1[30];
+    int per_game_p2[30];
+};
+
+static RecordsData global_records;
+
+static void load_records(void) {
+    memset(&global_records, 0, sizeof(global_records));
+    FILE *f = fopen("records.dat", "rb");
+    if (!f) f = fopen("ms0:/PSP/SAVEDATA/2PLAY0000/records.dat", "rb");
+    if (f) {
+        fread(&global_records, sizeof(global_records), 1, f);
+        fclose(f);
+    }
+}
+
+static void save_records(void) {
+    FILE *f = fopen("records.dat", "wb");
+    if (f) {
+        fwrite(&global_records, sizeof(global_records), 1, f);
+        fclose(f);
+    }
+    f = fopen("ms0:/PSP/SAVEDATA/2PLAY0000/records.dat", "wb");
+    if (f) {
+        fwrite(&global_records, sizeof(global_records), 1, f);
+        fclose(f);
+    }
+}
 
 /* ─── HARDWARE INPUT INTERFACE ───────────────────────────────────────── */
 
@@ -1744,11 +1797,18 @@ struct ChessGame {
 #include "games_wave2.hpp"
 #include "games_wave3.hpp"
 #include "games_wave4.hpp"
+#include "games_wave5.hpp"
 
 struct App {
     AppState state;
     MinigameType selected_game;
     GameMode mode;
+    TournamentType tourney_type;
+    int tourney_p1_wins;
+    int tourney_p2_wins;
+    int tourney_target_wins;
+    int tourney_current_round;
+    std::vector<int> tourney_queue;
     int menu_cursor;
     int winner; // 1 or 2
 
@@ -1776,11 +1836,22 @@ struct App {
     SoccerGame soccer;
     BowlingGame bowling;
     DartsGame darts;
+    PinballGame pinball;
+    PoolGame pool;
+    MiniGolfGame minigolf;
+    MemoryGame memory;
+    ArmWrestlingGame armwrestle;
+    CurveRacerGame curveracer;
 
     void init() {
         state = STATE_MENU;
         selected_game = GAME_PINGPONG;
         mode = MODE_1P_VS_AI;
+        tourney_type = TOURNEY_OFF;
+        tourney_p1_wins = 0;
+        tourney_p2_wins = 0;
+        tourney_target_wins = 0;
+        tourney_current_round = 0;
         menu_cursor = 0;
         winner = 0;
     }
@@ -1812,6 +1883,34 @@ struct App {
         if (selected_game == GAME_SOCCER)     soccer.reset(true);
         if (selected_game == GAME_BOWLING)    bowling.reset(true);
         if (selected_game == GAME_DARTS)      darts.reset(true);
+        if (selected_game == GAME_PINBALL)    pinball.reset(true);
+        if (selected_game == GAME_POOL)       pool.reset(true);
+        if (selected_game == GAME_MINIGOLF)   minigolf.reset(true);
+        if (selected_game == GAME_MEMORY)     memory.reset(true);
+        if (selected_game == GAME_ARMWRESTLE) armwrestle.reset(true);
+        if (selected_game == GAME_CURVERACER) curveracer.reset(true);
+    }
+
+    void start_tournament(TournamentType t) {
+        tourney_type = t;
+        tourney_p1_wins = 0;
+        tourney_p2_wins = 0;
+        tourney_current_round = 0;
+        tourney_queue.clear();
+
+        if (t == TOURNEY_BO3) tourney_target_wins = 2;
+        else if (t == TOURNEY_BO5) tourney_target_wins = 3;
+        else if (t == TOURNEY_BO7) tourney_target_wins = 4;
+        else if (t == TOURNEY_DECATHLON) tourney_target_wins = 10;
+
+        for (int i = 0; i < GAME_COUNT; i++) tourney_queue.push_back(i);
+        for (size_t i = tourney_queue.size() - 1; i > 0; i--) {
+            size_t j = rand() % (i + 1);
+            int tmp = tourney_queue[i]; tourney_queue[i] = tourney_queue[j]; tourney_queue[j] = tmp;
+        }
+
+        selected_game = (MinigameType)tourney_queue[0];
+        start_selected_game();
     }
 
     void update(const GamePadState &pad) {
@@ -1855,12 +1954,26 @@ struct App {
                 play_tone(580.0f, 30);
             }
 
+            if (((pad_curr.Buttons & PSP_CTRL_SQUARE) != 0) && ((pad_prev.Buttons & PSP_CTRL_SQUARE) == 0)) {
+                tourney_type = (TournamentType)((tourney_type + 1) % TOURNEY_TYPE_COUNT);
+                play_tone(520.0f, 30);
+            }
+
+            if (((pad_curr.Buttons & PSP_CTRL_TRIANGLE) != 0) && ((pad_prev.Buttons & PSP_CTRL_TRIANGLE) == 0)) {
+                state = STATE_RECORDS;
+                play_tone(600.0f, 35);
+            }
+
             bool start_req = pad.start_pressed ||
                              (((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) != 0) &&
                               ((pad_prev.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) == 0));
             if (start_req) {
                 play_tone(660.0f, 50);
-                start_selected_game();
+                if (tourney_type != TOURNEY_OFF) {
+                    start_tournament(tourney_type);
+                } else {
+                    start_selected_game();
+                }
             }
         } else if (state == STATE_PLAYING) {
             if (pad.start_pressed) {
@@ -1897,10 +2010,55 @@ struct App {
             if (selected_game == GAME_SOCCER)     soccer.update(pad, mode, winner);
             if (selected_game == GAME_BOWLING)    bowling.update(pad, mode, winner);
             if (selected_game == GAME_DARTS)      darts.update(pad, mode, winner);
+            if (selected_game == GAME_PINBALL)    pinball.update(pad, mode, winner);
+            if (selected_game == GAME_POOL)       pool.update(pad, mode, winner);
+            if (selected_game == GAME_MINIGOLF)   minigolf.update(pad, mode, winner);
+            if (selected_game == GAME_MEMORY)     memory.update(pad, mode, winner);
+            if (selected_game == GAME_ARMWRESTLE) armwrestle.update(pad, mode, winner);
+            if (selected_game == GAME_CURVERACER) curveracer.update(pad, mode, winner);
 
             if (winner != 0) {
-                state = STATE_GAMEOVER;
-                play_tone(winner == 1 ? 750.0f : 300.0f, 250);
+                global_records.total_matches++;
+                if (winner == 1) {
+                    global_records.p1_wins++;
+                    global_records.per_game_p1[selected_game]++;
+                } else {
+                    global_records.p2_wins++;
+                    global_records.per_game_p2[selected_game]++;
+                }
+                save_records();
+
+                if (tourney_type != TOURNEY_OFF) {
+                    if (winner == 1) tourney_p1_wins++;
+                    else tourney_p2_wins++;
+
+                    tourney_current_round++;
+
+                    bool series_over = false;
+                    if (tourney_type == TOURNEY_DECATHLON) {
+                        if (tourney_current_round >= 10 || (size_t)tourney_current_round >= tourney_queue.size()) {
+                            series_over = true;
+                        }
+                    } else {
+                        if (tourney_p1_wins >= tourney_target_wins || tourney_p2_wins >= tourney_target_wins) {
+                            series_over = true;
+                        }
+                    }
+
+                    if (series_over) {
+                        if (tourney_p1_wins > tourney_p2_wins) global_records.tourneys_p1_won++;
+                        else global_records.tourneys_p2_won++;
+                        save_records();
+                        state = STATE_TOURNEY_PODIUM;
+                        play_tone(winner == 1 ? 750.0f : 300.0f, 250);
+                    } else {
+                        state = STATE_TOURNEY_STANDINGS;
+                        play_tone(winner == 1 ? 750.0f : 300.0f, 250);
+                    }
+                } else {
+                    state = STATE_GAMEOVER;
+                    play_tone(winner == 1 ? 750.0f : 300.0f, 250);
+                }
             }
         } else if (state == STATE_PAUSED) {
             if (pad.start_pressed) {
@@ -1908,14 +2066,48 @@ struct App {
                 play_tone(450.0f, 30);
             } else if (pad.select_pressed || pad.p1.action || pad.p2.action) {
                 state = STATE_MENU;
+                tourney_type = TOURNEY_OFF;
                 play_tone(300.0f, 40);
             }
         } else if (state == STATE_GAMEOVER) {
             bool any_btn = pad.start_pressed || pad.p1.action || pad.p2.action ||
-                           ((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_SQUARE | PSP_CTRL_TRIANGLE)) != 0);
+                           (((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_SQUARE | PSP_CTRL_TRIANGLE)) != 0) &&
+                            ((pad_prev.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_SQUARE | PSP_CTRL_TRIANGLE)) == 0));
             if (any_btn) {
                 state = STATE_MENU;
                 play_tone(500.0f, 40);
+            }
+        } else if (state == STATE_TOURNEY_STANDINGS) {
+            if (pad.select_pressed) {
+                state = STATE_MENU;
+                tourney_type = TOURNEY_OFF;
+                play_tone(300.0f, 40);
+                return;
+            }
+            bool any_btn = pad.start_pressed || pad.p1.action || pad.p2.action ||
+                           (((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) != 0) &&
+                            ((pad_prev.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) == 0));
+            if (any_btn) {
+                selected_game = (MinigameType)tourney_queue[tourney_current_round % tourney_queue.size()];
+                start_selected_game();
+                play_tone(600.0f, 40);
+            }
+        } else if (state == STATE_TOURNEY_PODIUM) {
+            bool any_btn = pad.start_pressed || pad.p1.action || pad.p2.action ||
+                           (((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_SQUARE | PSP_CTRL_TRIANGLE)) != 0) &&
+                            ((pad_prev.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_SQUARE | PSP_CTRL_TRIANGLE)) == 0));
+            if (any_btn) {
+                state = STATE_MENU;
+                tourney_type = TOURNEY_OFF;
+                play_tone(500.0f, 40);
+            }
+        } else if (state == STATE_RECORDS) {
+            bool any_btn = pad.start_pressed || pad.select_pressed ||
+                           (((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_TRIANGLE | PSP_CTRL_SQUARE)) != 0) &&
+                            ((pad_prev.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE | PSP_CTRL_TRIANGLE | PSP_CTRL_SQUARE)) == 0));
+            if (any_btn) {
+                state = STATE_MENU;
+                play_tone(450.0f, 30);
             }
         }
     }
@@ -1945,73 +2137,89 @@ struct App {
         if (selected_game == GAME_SOCCER)     soccer.render(ren, mode);
         if (selected_game == GAME_BOWLING)    bowling.render(ren, mode);
         if (selected_game == GAME_DARTS)      darts.render(ren, mode);
+        if (selected_game == GAME_PINBALL)    pinball.render(ren, mode);
+        if (selected_game == GAME_POOL)       pool.render(ren, mode);
+        if (selected_game == GAME_MINIGOLF)   minigolf.render(ren, mode);
+        if (selected_game == GAME_MEMORY)     memory.render(ren, mode);
+        if (selected_game == GAME_ARMWRESTLE) armwrestle.render(ren, mode);
+        if (selected_game == GAME_CURVERACER) curveracer.render(ren, mode);
     }
 
     void render(SDL_Renderer *ren) {
+        const char *titles1[GAME_COUNT] = {
+            "PING",    "AIR",    "SPINNER", "TANK",   "CHECKERS", "ROYAL",
+            "TIC TAC", "CONNECT", "DOTS &",  "REVERSI", "BATTLE",  "TUG OF",
+            "SUMO",    "NEON",   "RED",     "KNIFE",  "QUICK",   "SLING",
+            "PENALTY", "MICRO",  "BASKET",  "BOUNCY", "TEN PIN", "BULLSEYE",
+            "PINBALL", "8-BALL", "MINI",    "MEMORY", "ARM",     "CURVE"
+        };
+        const char *titles2[GAME_COUNT] = {
+            "PONG",    "HOCKEY", "WAR",     "BATTLE", "DAMA",     "CHESS",
+            "TOE",     "FOUR",   "BOXES",   "OTHELLO", "SHIP",    "WAR",
+            "RING",    "SNAKE",  "HANDS",   "HIT",    "DRAW",    "PUCK",
+            "KICK",    "RACERS", "BALL",    "SOCCER", "BOWLING", "DARTS",
+            "DUEL",    "POOL",   "GOLF",    "CARDS",  "WRESTLE", "RACER"
+        };
+        const char *descs[GAME_COUNT] = {
+            "CLASSIC PADDLE RALLY BATTLE",
+            "2D AIR HOCKEY TABLE & SMASHES",
+            "BEYBLADE SUMO RING KNOCKOUT",
+            "TACTICAL BOUNCING SHELL COMBAT",
+            "CLASSIC 8x8 DAMA & KING CROWNS",
+            "TACTICAL ROYAL BOARD CHECKMATE",
+            "FAST 3x3 LINE COMPLETION DUEL",
+            "VERTICAL 4-IN-A-ROW GRAVITY DROP",
+            "TERRITORY BOX CAPTURE PUZZLE",
+            "DISC SURROUND & FLIP TACTICS",
+            "NAVAL RADAR SALVO STRIKES",
+            "RAPID BUTTON MASHING ROPE PULL",
+            "HEAVYWEIGHT RING-OUT SHOVING",
+            "TRON LIGHT CYCLES & TRAIL CRASH",
+            "REFLEX HAND SLAP & DODGE DUEL",
+            "ROTATING TIMBER KNIFE THROW",
+            "HIGH NOON WESTERN SHOOTOUT",
+            "FAST FINGER HOCKEY GATE FLING",
+            "GOALKEEPER VS STRIKER SHOOTOUT",
+            "DRIFT FORMULA CIRCUIT SPRINT",
+            "TIMED ARC GRAVITY HOOP SHOOTOUT",
+            "HEAD & KICK RAGDOLL FOOTBALL",
+            "PERSPECTIVE 10-PIN STRIKE DUEL",
+            "PRECISION 301 TARGET BOARD",
+            "RETRO FLIPPER & BUMPER DUEL",
+            "CLASSIC POCKET CUE BALL BILLIARDS",
+            "WINDMILL OBSTACLE PUTTING GREEN",
+            "4x4 HIDDEN SYMBOL MATCH CONTEST",
+            "RAPID MASH TABLE SLAM STRUGGLE",
+            "ACHTUNG NEON TRAIL SURVIVAL DUEL"
+        };
+
         if (state == STATE_MENU) {
-            draw_centered_str(ren, SCR_W / 2 + 1, 15, "2 PLAYER GAMES", COL_SHADOW, 3);
-            draw_centered_str(ren, SCR_W / 2, 14, "2 PLAYER GAMES", COL_GOLD, 3);
-            draw_centered_str(ren, SCR_W / 2, 38, "THE CHALLENGE - PSP EDITION", COL_DIM, 1);
+            draw_centered_str(ren, SCR_W / 2 + 1, 13, "2 PLAYER GAMES", COL_SHADOW, 3);
+            draw_centered_str(ren, SCR_W / 2, 12, "2 PLAYER GAMES", COL_GOLD, 3);
+            draw_centered_str(ren, SCR_W / 2, 34, "THE CHALLENGE - PSP EDITION", COL_DIM, 1);
 
             int current_page = menu_cursor / 6;
             int page_start = current_page * 6;
             char page_hdr[64];
             if (current_page == 0) {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 1/4: ARCADE & CLASSICS  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 1/5: ARCADE & CLASSICS  [L/R PAGE]");
             } else if (current_page == 1) {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 2/4: TABLETOP & STRATEGY  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 2/5: TABLETOP & STRATEGY  [L/R PAGE]");
             } else if (current_page == 2) {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 3/4: BRAWLERS & REFLEXES  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 3/5: BRAWLERS & REFLEXES  [L/R PAGE]");
+            } else if (current_page == 3) {
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 4/5: SPORTS & TARGETS  [L/R PAGE]");
             } else {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 4/4: SPORTS & TARGETS  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 5/5: LEISURE & BONUSES  [L/R PAGE]");
             }
-            draw_centered_str(ren, SCR_W / 2, 54, page_hdr, COL_GOLD, 1);
-
-            const char *titles1[GAME_COUNT] = {
-                "PING",    "AIR",    "SPINNER", "TANK",   "CHECKERS", "ROYAL",
-                "TIC TAC", "CONNECT", "DOTS &",  "REVERSI", "BATTLE",  "TUG OF",
-                "SUMO",    "NEON",   "RED",     "KNIFE",  "QUICK",   "SLING",
-                "PENALTY", "MICRO",  "BASKET",  "BOUNCY", "TEN PIN", "BULLSEYE"
-            };
-            const char *titles2[GAME_COUNT] = {
-                "PONG",    "HOCKEY", "WAR",     "BATTLE", "DAMA",     "CHESS",
-                "TOE",     "FOUR",   "BOXES",   "OTHELLO", "SHIP",    "WAR",
-                "RING",    "SNAKE",  "HANDS",   "HIT",    "DRAW",    "PUCK",
-                "KICK",    "RACERS", "BALL",    "SOCCER", "BOWLING", "DARTS"
-            };
-            const char *descs[GAME_COUNT] = {
-                "CLASSIC PADDLE RALLY BATTLE",
-                "2D AIR HOCKEY TABLE & SMASHES",
-                "BEYBLADE SUMO RING KNOCKOUT",
-                "TACTICAL BOUNCING SHELL COMBAT",
-                "CLASSIC 8x8 DAMA & KING CROWNS",
-                "TACTICAL ROYAL BOARD CHECKMATE",
-                "FAST 3x3 LINE COMPLETION DUEL",
-                "VERTICAL 4-IN-A-ROW GRAVITY DROP",
-                "TERRITORY BOX CAPTURE PUZZLE",
-                "DISC SURROUND & FLIP TACTICS",
-                "NAVAL RADAR SALVO STRIKES",
-                "RAPID BUTTON MASHING ROPE PULL",
-                "HEAVYWEIGHT RING-OUT SHOVING",
-                "TRON LIGHT CYCLES & TRAIL CRASH",
-                "REFLEX HAND SLAP & DODGE DUEL",
-                "ROTATING TIMBER KNIFE THROW",
-                "HIGH NOON WESTERN SHOOTOUT",
-                "FAST FINGER HOCKEY GATE FLING",
-                "GOALKEEPER VS STRIKER SHOOTOUT",
-                "DRIFT FORMULA CIRCUIT SPRINT",
-                "TIMED ARC GRAVITY HOOP SHOOTOUT",
-                "HEAD & KICK RAGDOLL FOOTBALL",
-                "PERSPECTIVE 10-PIN STRIKE DUEL",
-                "PRECISION 301 TARGET BOARD"
-            };
+            draw_centered_str(ren, SCR_W / 2, 48, page_hdr, COL_GOLD, 1);
 
             for (int idx = 0; idx < 6; idx++) {
                 int i = page_start + idx;
                 int cx = 16 + idx * 76;
-                int cy = 72;
+                int cy = 64;
                 int cw = 68;
-                int ch = 76;
+                int ch = 74;
 
                 if (i == menu_cursor) {
                     SDL_Rect glow = {cx - 2, cy - 2, cw + 4, ch + 4};
@@ -2027,43 +2235,67 @@ struct App {
 
                 char num[16];
                 snprintf(num, sizeof(num), "#%d", i + 1);
-                draw_centered_str(ren, cx + cw / 2, cy + 10, num, COL_GOLD, 1);
-                draw_centered_str(ren, cx + cw / 2, cy + 30, titles1[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
-                draw_centered_str(ren, cx + cw / 2, cy + 44, titles2[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
+                draw_centered_str(ren, cx + cw / 2, cy + 8, num, COL_GOLD, 1);
+                draw_centered_str(ren, cx + cw / 2, cy + 28, titles1[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
+                draw_centered_str(ren, cx + cw / 2, cy + 42, titles2[i], i == menu_cursor ? COL_WHITE : COL_DIM, 1);
             }
 
-            draw_centered_str(ren, SCR_W / 2, 162, descs[menu_cursor], COL_WHITE, 1);
+            draw_centered_str(ren, SCR_W / 2, 148, descs[menu_cursor], COL_WHITE, 1);
 
-            int mode_y = 186;
-            SDL_Rect mode_pill = {SCR_W / 2 - 135, mode_y, 270, 24};
+            int mode_y = 166;
+            SDL_Rect mode_pill = {SCR_W / 2 - 145, mode_y, 290, 20};
             set_color(ren, COL_CARD);
             SDL_RenderFillRect(ren, &mode_pill);
             set_color(ren, COL_GOLD);
             SDL_RenderDrawRect(ren, &mode_pill);
 
-            const char *mstr = (mode == MODE_1P_VS_AI) ? "< MODE: 1 PLAYER (VS AI) >" : "< MODE: 2 PLAYERS (SPLIT OPPS) >";
-            draw_centered_str(ren, SCR_W / 2, mode_y + 8, mstr, COL_GOLD, 1);
+            const char *mstr = (mode == MODE_1P_VS_AI) ? "< SELECT: 1P VS AI >" : "< SELECT: 2 PLAYERS (SPLIT CONSOLE) >";
+            draw_centered_str(ren, SCR_W / 2, mode_y + 6, mstr, COL_GOLD, 1);
 
-            if (mode == MODE_1P_VS_AI) {
-                draw_centered_str(ren, SCR_W / 2, 222, "P1 (LEFT): D-PAD + L / X  |  VS AI CPU", COL_DIM, 1);
-            } else {
-                draw_centered_str(ren, SCR_W / 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1);
-            }
-            draw_centered_str(ren, SCR_W / 2, 240, "SELECT: TOGGLE MODE   |   START / X / O: BEGIN", COL_WHITE, 1);
-            draw_centered_str(ren, SCR_W / 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3 / 4)", COL_GOLD, 1);
+            int tourney_y = 190;
+            SDL_Rect t_pill = {SCR_W / 2 - 145, tourney_y, 290, 20};
+            set_color(ren, COL_CARD);
+            SDL_RenderFillRect(ren, &t_pill);
+            set_color(ren, (tourney_type != TOURNEY_OFF) ? Color(80, 240, 140) : COL_BORDER);
+            SDL_RenderDrawRect(ren, &t_pill);
+
+            const char *t_names[] = {
+                "[SQ] TOURNEY: OFF (SINGLE MATCH)",
+                "[SQ] TOURNEY: BEST OF 3 CUP",
+                "[SQ] TOURNEY: BEST OF 5 CUP",
+                "[SQ] TOURNEY: BEST OF 7 CUP",
+                "[SQ] TOURNEY: DECATHLON (10 GAMES)"
+            };
+            Color tc = (tourney_type != TOURNEY_OFF) ? Color(80, 240, 140) : COL_DIM;
+            draw_centered_str(ren, SCR_W / 2, tourney_y + 6, t_names[tourney_type], tc, 1);
+
+            draw_centered_str(ren, SCR_W / 2, 222, "[^] STATS & RECORDS   |   [L/R TRIGGERS] PAGES 1-5", COL_DIM, 1);
+            draw_centered_str(ren, SCR_W / 2, 244, "D-PAD: SELECT GAME   |   START / X: PLAY", COL_WHITE, 1);
 
         } else if (state == STATE_PLAYING) {
             render_active_game(ren);
 
             if (mode == MODE_1P_VS_AI) {
                 draw_str(ren, 16, 6, "P1 (BLUE)", COL_BLUE, 1);
-                draw_centered_str(ren, SCR_W / 2, 6, "1P VS AI", COL_DIM, 1);
+                if (tourney_type != TOURNEY_OFF) {
+                    char t_hud[32];
+                    snprintf(t_hud, sizeof(t_hud), "CUP: %d - %d", tourney_p1_wins, tourney_p2_wins);
+                    draw_centered_str(ren, SCR_W / 2, 6, t_hud, COL_GOLD, 1);
+                } else {
+                    draw_centered_str(ren, SCR_W / 2, 6, "1P VS AI", COL_DIM, 1);
+                }
                 draw_str(ren, SCR_W - 88, 6, "CPU (RED)", COL_RED, 1);
             } else {
                 set_color(ren, COL_BORDER);
                 SDL_RenderDrawLine(ren, SCR_W / 2, 0, SCR_W / 2, 8);
                 SDL_RenderDrawLine(ren, SCR_W / 2, SCR_H - 8, SCR_W / 2, SCR_H);
-                draw_centered_str(ren, SCR_W / 2, 2, "2P", COL_DIM, 1);
+                if (tourney_type != TOURNEY_OFF) {
+                    char t_hud[32];
+                    snprintf(t_hud, sizeof(t_hud), "%d - %d", tourney_p1_wins, tourney_p2_wins);
+                    draw_centered_str(ren, SCR_W / 2, 2, t_hud, COL_GOLD, 1);
+                } else {
+                    draw_centered_str(ren, SCR_W / 2, 2, "2P", COL_DIM, 1);
+                }
             }
 
         } else if (state == STATE_PAUSED) {
@@ -2148,6 +2380,99 @@ struct App {
                 draw_centered_str(ren, SCR_W / 2, SCR_H / 2 - 6, wstr, wc, 2);
                 draw_centered_str(ren, SCR_W / 2, SCR_H / 2 + 26, "PRESS ANY BUTTON TO CONTINUE", COL_WHITE, 1);
             }
+        } else if (state == STATE_TOURNEY_STANDINGS) {
+            SDL_Rect pop = { SCR_W / 2 - 180, 28, 360, 216 };
+            set_color(ren, COL_CARD);
+            SDL_RenderFillRect(ren, &pop);
+            set_color(ren, COL_GOLD);
+            SDL_RenderDrawRect(ren, &pop);
+
+            draw_centered_str(ren, SCR_W / 2, 42, "TOURNAMENT STANDINGS", COL_GOLD, 2);
+
+            const char *tourney_names[] = { "OFF", "BEST OF 3 CUP", "BEST OF 5 CUP", "BEST OF 7 CUP", "DECATHLON (10 GAMES)" };
+            draw_centered_str(ren, SCR_W / 2, 68, tourney_names[tourney_type], COL_DIM, 1);
+
+            char sc1[32], sc2[32];
+            snprintf(sc1, sizeof(sc1), "PLAYER 1: %d WINS", tourney_p1_wins);
+            snprintf(sc2, sizeof(sc2), (mode == MODE_1P_VS_AI) ? "AI CPU: %d WINS" : "PLAYER 2: %d WINS", tourney_p2_wins);
+            draw_centered_str(ren, SCR_W / 2, 96, sc1, COL_BLUE, 2);
+            draw_centered_str(ren, SCR_W / 2, 122, sc2, COL_RED, 2);
+
+            int next_g = tourney_queue[tourney_current_round % tourney_queue.size()];
+            char next_str[64];
+            snprintf(next_str, sizeof(next_str), "NEXT: #%d %s %s", next_g + 1, titles1[next_g], titles2[next_g]);
+            draw_centered_str(ren, SCR_W / 2, 156, next_str, COL_WHITE, 1);
+
+            draw_centered_str(ren, SCR_W / 2, 188, "PRESS [X] OR [START] FOR NEXT ROUND", COL_GOLD, 1);
+            draw_centered_str(ren, SCR_W / 2, 212, "PRESS [SELECT] TO QUIT TOURNAMENT", COL_DIM, 1);
+
+        } else if (state == STATE_TOURNEY_PODIUM) {
+            SDL_Rect pop = { SCR_W / 2 - 190, 24, 380, 224 };
+            set_color(ren, COL_CARD);
+            SDL_RenderFillRect(ren, &pop);
+            set_color(ren, COL_GOLD);
+            SDL_RenderDrawRect(ren, &pop);
+
+            draw_centered_str(ren, SCR_W / 2, 38, "TOURNAMENT CHAMPION!", COL_GOLD, 2);
+
+            bool p1_won = (tourney_p1_wins > tourney_p2_wins);
+            const char *champ_name = p1_won ? "PLAYER 1 (BLUE)" : (mode == MODE_1P_VS_AI ? "AI CPU (RED)" : "PLAYER 2 (RED)");
+            Color champ_col = p1_won ? COL_BLUE : COL_RED;
+            draw_centered_str(ren, SCR_W / 2, 68, champ_name, champ_col, 2);
+
+            int tx = SCR_W / 2, ty = 125;
+            SDL_Rect cup_cup = { tx - 25, ty - 20, 50, 30 };
+            set_color(ren, COL_GOLD);
+            SDL_RenderFillRect(ren, &cup_cup);
+            SDL_Rect cup_stem = { tx - 6, ty + 10, 12, 15 };
+            SDL_RenderFillRect(ren, &cup_stem);
+            SDL_Rect cup_base = { tx - 20, ty + 25, 40, 10 };
+            SDL_RenderFillRect(ren, &cup_base);
+            draw_centered_str(ren, tx, ty - 12, "#1", COL_SHADOW, 2);
+
+            char fin_score[64];
+            snprintf(fin_score, sizeof(fin_score), "FINAL SCORE: %d - %d", tourney_p1_wins, tourney_p2_wins);
+            draw_centered_str(ren, SCR_W / 2, 175, fin_score, COL_WHITE, 1);
+            draw_centered_str(ren, SCR_W / 2, 210, "PRESS ANY BUTTON FOR MAIN MENU", COL_GOLD, 1);
+
+        } else if (state == STATE_RECORDS) {
+            SDL_Rect pop = { 30, 20, 420, 232 };
+            set_color(ren, COL_CARD);
+            SDL_RenderFillRect(ren, &pop);
+            set_color(ren, COL_GOLD);
+            SDL_RenderDrawRect(ren, &pop);
+
+            draw_centered_str(ren, SCR_W / 2, 34, "LIFETIME RECORDS & TROPHIES", COL_GOLD, 2);
+
+            char m_str[64];
+            snprintf(m_str, sizeof(m_str), "TOTAL MATCHES PLAYED: %d", global_records.total_matches);
+            draw_centered_str(ren, SCR_W / 2, 64, m_str, COL_WHITE, 1);
+
+            char p1_str[64], p2_str[64];
+            snprintf(p1_str, sizeof(p1_str), "P1 MATCH WINS: %d   |   CUPS WON: %d", global_records.p1_wins, global_records.tourneys_p1_won);
+            snprintf(p2_str, sizeof(p2_str), "P2 MATCH WINS: %d   |   CUPS WON: %d", global_records.p2_wins, global_records.tourneys_p2_won);
+            draw_centered_str(ren, SCR_W / 2, 90, p1_str, COL_BLUE, 1);
+            draw_centered_str(ren, SCR_W / 2, 110, p2_str, COL_RED, 1);
+
+            int bar_w = 300, bar_h = 14;
+            int bx = (SCR_W - bar_w) / 2, by = 138;
+            SDL_Rect bar_bg = { bx, by, bar_w, bar_h };
+            set_color(ren, Color(20, 25, 45));
+            SDL_RenderFillRect(ren, &bar_bg);
+            if (global_records.total_matches > 0) {
+                int p1_w = (global_records.p1_wins * bar_w) / global_records.total_matches;
+                SDL_Rect p1_fill = { bx, by, p1_w, bar_h };
+                set_color(ren, COL_BLUE);
+                SDL_RenderFillRect(ren, &p1_fill);
+                SDL_Rect p2_fill = { bx + p1_w, by, bar_w - p1_w, bar_h };
+                set_color(ren, COL_RED);
+                SDL_RenderFillRect(ren, &p2_fill);
+            }
+            set_color(ren, COL_BORDER);
+            SDL_RenderDrawRect(ren, &bar_bg);
+
+            draw_centered_str(ren, SCR_W / 2, 168, "SAVED TO MEMORY STICK SAVEDATA", COL_DIM, 1);
+            draw_centered_str(ren, SCR_W / 2, 214, "PRESS [O] OR [START] TO RETURN", COL_GOLD, 1);
         }
     }
 };
@@ -2195,6 +2520,7 @@ int main(int argc, char *argv[]) {
     }
 
     srand(12345);
+    load_records();
     App app;
     app.init();
 

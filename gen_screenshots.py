@@ -304,10 +304,10 @@ def make_screenshot_menu():
         for x in range(W):
             c.buf[y][x] = (r, g, b)
 
-    c.draw_centered_str(W // 2 + 1, 15, "2 PLAYER GAMES", COL_SHADOW, 3)
-    c.draw_centered_str(W // 2, 14, "2 PLAYER GAMES", COL_GOLD, 3)
-    c.draw_centered_str(W // 2, 38, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
-    c.draw_centered_str(W // 2, 54, "PAGE 1/4: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
+    c.draw_centered_str(W // 2 + 1, 13, "2 PLAYER GAMES", COL_SHADOW, 3)
+    c.draw_centered_str(W // 2, 12, "2 PLAYER GAMES", COL_GOLD, 3)
+    c.draw_centered_str(W // 2, 34, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
+    c.draw_centered_str(W // 2, 48, "PAGE 1/5: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
 
     titles1 = ["PING", "AIR", "SPINNER", "TANK", "CHECKERS", "ROYAL"]
     titles2 = ["PONG", "HOCKEY", "WAR", "BATTLE", "DAMA", "CHESS"]
@@ -323,27 +323,31 @@ def make_screenshot_menu():
 
     for i in range(6):
         cx = 16 + i * 76
-        cy = 72
+        cy = 64
         cw = 68
-        ch = 76
+        ch = 74
         if i == selected:
             c.fill_rect(cx - 2, cy - 2, cw + 4, ch + 4, COL_BLUE)
         c.fill_rect(cx, cy, cw, ch, COL_CARD)
         c.draw_rect(cx, cy, cw, ch, COL_WHITE if i == selected else COL_BORDER)
-        c.draw_centered_str(cx + cw // 2, cy + 10, f"#{i+1}", COL_GOLD, 1)
-        c.draw_centered_str(cx + cw // 2, cy + 30, titles1[i], COL_WHITE if i == selected else COL_DIM, 1)
-        c.draw_centered_str(cx + cw // 2, cy + 44, titles2[i], COL_WHITE if i == selected else COL_DIM, 1)
+        c.draw_centered_str(cx + cw // 2, cy + 8, f"#{i+1}", COL_GOLD, 1)
+        c.draw_centered_str(cx + cw // 2, cy + 28, titles1[i], COL_WHITE if i == selected else COL_DIM, 1)
+        c.draw_centered_str(cx + cw // 2, cy + 42, titles2[i], COL_WHITE if i == selected else COL_DIM, 1)
 
-    c.draw_centered_str(W // 2, 162, descs[selected], COL_WHITE, 1)
+    c.draw_centered_str(W // 2, 148, descs[selected], COL_WHITE, 1)
 
-    mode_y = 186
-    c.fill_rect(W // 2 - 135, mode_y, 270, 24, COL_CARD)
-    c.draw_rect(W // 2 - 135, mode_y, 270, 24, COL_GOLD)
-    c.draw_centered_str(W // 2, mode_y + 8, "< MODE: 2 PLAYERS (SPLIT OPPS) >", COL_GOLD, 1)
+    mode_y = 166
+    c.fill_rect(W // 2 - 145, mode_y, 290, 20, COL_CARD)
+    c.draw_rect(W // 2 - 145, mode_y, 290, 20, COL_GOLD)
+    c.draw_centered_str(W // 2, mode_y + 6, "< SELECT: 2 PLAYERS (SPLIT CONSOLE) >", COL_GOLD, 1)
 
-    c.draw_centered_str(W // 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1)
-    c.draw_centered_str(W // 2, 240, "SELECT: TOGGLE MODE   |   START / X / O: BEGIN", COL_WHITE, 1)
-    c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3 / 4)", COL_GOLD, 1)
+    tourney_y = 190
+    c.fill_rect(W // 2 - 145, tourney_y, 290, 20, COL_CARD)
+    c.draw_rect(W // 2 - 145, tourney_y, 290, 20, (80, 240, 140))
+    c.draw_centered_str(W // 2, tourney_y + 6, "[SQ] TOURNEY: BEST OF 5 CUP", (80, 240, 140), 1)
+
+    c.draw_centered_str(W // 2, 222, "[^] STATS & RECORDS   |   [L/R TRIGGERS] PAGES 1-5", COL_DIM, 1)
+    c.draw_centered_str(W // 2, 244, "D-PAD: SELECT GAME   |   START / X: PLAY", COL_WHITE, 1)
 
     c.save_png("screenshot_menu.png")
     c.save_png("screenshot.png")

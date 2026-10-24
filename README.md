@@ -2,7 +2,7 @@
 
 A native C++11 and SDL2 Sony PlayStation Portable (PSP) homebrew port of the hit local multiplayer party game **"2 Player Games: The Challenge"** (originally by JindoBlu). 
 
-Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 14MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **12 complete minigames** arranged in an expandable paginated grid carousel.
+Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering and constrained within a lightweight heap memory budget (< 16MB, fully compatible with 32MB PSP-1000 models), this port delivers smooth 60 FPS competitive local 1v1 action on a single console, plus an algorithmic Single-Player VS AI engine across **18 complete minigames** arranged in an expandable 3-page grid carousel.
 
 <p align="center">
   <img src="screenshot.png" alt="2 Player Games PSP Edition" width="760"/>
@@ -32,14 +32,19 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 | <img src="screenshot_tictactoe.png" alt="Tic-Tac-Toe" width="460"/> | <img src="screenshot_connect4.png" alt="Connect 4" width="460"/> |
 | *Classic 3×3 grid duel, win line strike & AI blocking* | *Vertical 7×6 gravity drop, slot cutouts & 4-chain tactics* |
 
-| **9. Main Menu (Paginated Carousel)** | **10. Dual-Facing Match Over** |
+| **9. Sumo (Dohyo Ring-Out)** | **10. Western Quick Draw** |
 |:---:|:---:|
-| <img src="screenshot_menu.png" alt="Main Menu" width="460"/> | <img src="screenshot_gameover.png" alt="Game Over" width="460"/> |
-| *Multi-page grid menu with [L/R] instant page flip* | *Dual rotated victory cards facing each player's controls* |
+| <img src="screenshot_sumo.png" alt="Sumo Wrestling" width="460"/> | <img src="screenshot_quickdraw.png" alt="Quick Draw" width="460"/> |
+| *Circular sand ring, shoving momentum & ring-out physics* | *High-noon standoff, signal reaction & misfire penalties* |
+
+| **11. Sling Puck (Finger Hockey)** | **12. Main Menu (3-Page Carousel)** |
+|:---:|:---:|
+| <img src="screenshot_slingpuck.png" alt="Sling Puck" width="460"/> | <img src="screenshot_menu.png" alt="Main Menu" width="460"/> |
+| *Hardwood board, elastic cords & center partition slot* | *3-page carousel with [L/R] instant page flip* |
 
 ---
 
-## Minigame Collection (12 Games)
+## Minigame Collection (18 Games)
 
 ### Page 1: Arcade & Action Classics
 1. **Ping Pong (Table Tennis):** Classic paddle rally battle with dynamic deflection angle physics and escalating volley velocity. First to 5 points wins.
@@ -56,6 +61,14 @@ Engineered from the ground up for strict 16:9 480×272 hardware canvas rendering
 10. **Reversi (Othello):** 8×8 tournament disc-flipping board with center starters, valid move dot indicators, and a positional matrix AI favoring corners (+100) and edge anchors.
 11. **Battleship (Naval Salvo):** Split-screen 6×6 naval radar combat. Hunt and sink the enemy fleet (Carrier, Cruiser, Patrol) with explosive hit effects and hunting AI.
 12. **Tug of War:** High-cadence button mashing rope battle over a center mud pit! Features dynamic rope physics tension, animated stick tuggers leaning back, and fatigue-scaled CPU AI.
+
+### Page 3: Brawlers & Reflexes (Wave 3)
+13. **Sumo:** Circular Dohyo arena with straw borders. Wrestlers push and shove each other; first to knock the opponent out of the ring takes the point.
+14. **Neon Snake (Light Cycles):** 40×22 neon grid. Steer high-speed light trails; hitting outer perimeter walls, your own body, or your opponent's trail causes immediate elimination.
+15. **Red Hands (Slap & Dodge):** Authentic hand slap duel. The attacker aims to slap before the defender can dodge; false dodges trigger penalty strikes. First to 5 hits wins.
+16. **Knife Hit:** Dual rotating timber targets. Race to stick all 6 knives into the revolving wood wheel without clipping previously embedded blades.
+17. **Western Quick Draw:** Standoff at high noon. Wait for the sudden gong signal and draw your revolver before your opponent, avoiding fatal early draw fouls.
+18. **Sling Puck:** Fast-paced finger hockey. Fling pucks using elastic bands across a wooden arena through a narrow center partition gate. First to clear all pucks from their half wins.
 
 ---
 

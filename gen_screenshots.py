@@ -307,7 +307,7 @@ def make_screenshot_menu():
     c.draw_centered_str(W // 2 + 1, 15, "2 PLAYER GAMES", COL_SHADOW, 3)
     c.draw_centered_str(W // 2, 14, "2 PLAYER GAMES", COL_GOLD, 3)
     c.draw_centered_str(W // 2, 38, "THE CHALLENGE - PSP EDITION", COL_DIM, 1)
-    c.draw_centered_str(W // 2, 54, "PAGE 1/2: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
+    c.draw_centered_str(W // 2, 54, "PAGE 1/3: ARCADE & CLASSICS  [L/R PAGE]", COL_GOLD, 1)
 
     titles1 = ["PING", "AIR", "SPINNER", "TANK", "CHECKERS", "ROYAL"]
     titles2 = ["PONG", "HOCKEY", "WAR", "BATTLE", "DAMA", "CHESS"]
@@ -343,7 +343,7 @@ def make_screenshot_menu():
 
     c.draw_centered_str(W // 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1)
     c.draw_centered_str(W // 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1)
-    c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGE 1 & 2", COL_GOLD, 1)
+    c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3)", COL_GOLD, 1)
 
     c.save_png("screenshot_menu.png")
     c.save_png("screenshot.png")
@@ -758,6 +758,118 @@ def make_screenshot_connect4():
     c.save_png("screenshot_connect4.png")
 
 
+# ─── 11. SUMO WRESTLING SCREENSHOT ────────────────────────────────────
+def make_screenshot_sumo():
+    c = Canvas()
+    cx, cy = W // 2, H // 2
+    r_base = 86
+
+    c.draw_circle(cx, cy, r_base + 8, (120, 95, 60))
+    c.draw_circle(cx, cy, r_base, (190, 160, 110))
+    c.draw_circle(cx, cy, r_base, COL_GOLD, False)
+    c.draw_circle(cx, cy, r_base - 1, (160, 120, 50), False)
+
+    # Shikiri-sen lines
+    c.draw_line(cx - 22, cy - 10, cx - 22, cy + 10, COL_WHITE)
+    c.draw_line(cx + 22, cy - 10, cx + 22, cy + 10, COL_WHITE)
+
+    # Wrestlers colliding
+    p1_x, p1_y = cx - 18, cy - 6
+    p2_x, p2_y = cx + 12, cy + 4
+    wr = 15
+
+    c.draw_circle(p1_x, p1_y, wr, COL_BLUE)
+    c.draw_circle(p1_x, p1_y, wr, COL_WHITE, False)
+    c.draw_circle(p1_x, p1_y, 4, (10, 40, 90))
+
+    c.draw_circle(p2_x, p2_y, wr, COL_RED)
+    c.draw_circle(p2_x, p2_y, wr, COL_WHITE, False)
+    c.draw_circle(p2_x, p2_y, 4, (90, 10, 20))
+
+    c.draw_centered_str(cx, 20, "P1: 2  vs  P2: 1", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "PLAYER 1", COL_BLUE, 1)
+    c.draw_centered_str_p1(36, H // 2, "[L] SHOVE", COL_GOLD, 1)
+
+    c.draw_centered_str_p2(W - 16, H // 2, "PLAYER 2", COL_RED, 1)
+    c.draw_centered_str_p2(W - 36, H // 2, "[R] SHOVE", COL_GOLD, 1)
+
+    c.save_png("screenshot_sumo.png")
+
+
+# ─── 12. WESTERN QUICK DRAW SCREENSHOT ────────────────────────────────
+def make_screenshot_quickdraw():
+    c = Canvas()
+    c.fill_rect(0, 160, W, H - 160, (160, 125, 75))
+    c.draw_circle(W // 2, 130, 40, (225, 120, 50))
+
+    # Cowboy 1
+    c1_x, c1_y = 90, 150
+    c.draw_circle(c1_x, c1_y - 28, 8, COL_BLUE)
+    c.draw_line(c1_x, c1_y - 20, c1_x, c1_y + 12, COL_BLUE)
+    c.draw_line(c1_x, c1_y + 12, c1_x - 8, c1_y + 30, COL_BLUE)
+    c.draw_line(c1_x, c1_y + 12, c1_x + 8, c1_y + 30, COL_BLUE)
+    c.draw_line(c1_x, c1_y - 8, c1_x + 14, c1_y, COL_BLUE)
+
+    # Cowboy 2
+    c2_x, c2_y = W - 90, 150
+    c.draw_circle(c2_x, c2_y - 28, 8, COL_RED)
+    c.draw_line(c2_x, c2_y - 20, c2_x, c2_y + 12, COL_RED)
+    c.draw_line(c2_x, c2_y + 12, c2_x - 8, c2_y + 30, COL_RED)
+    c.draw_line(c2_x, c2_y + 12, c2_x + 8, c2_y + 30, COL_RED)
+    c.draw_line(c2_x, c2_y - 8, c2_x - 14, c2_y, COL_RED)
+
+    c.draw_centered_str(W // 2, 50, ">> FIRE!! <<", COL_GOLD, 3)
+    c.draw_centered_str(W // 2, 20, "P1: 2/3   vs   P2: 1/3", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "DRAW [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "DRAW [R]", COL_RED, 1)
+
+    c.save_png("screenshot_quickdraw.png")
+
+
+# ─── 13. SLING PUCK SCREENSHOT ────────────────────────────────────────
+def make_screenshot_slingpuck():
+    c = Canvas()
+    ax, ay, aw, ah = 70, 40, 340, 192
+    mid_x = ax + aw // 2
+
+    c.fill_rect(ax - 4, ay - 4, aw + 8, ah + 8, (175, 135, 90))
+    c.draw_rect(ax - 4, ay - 4, aw + 8, ah + 8, (90, 60, 30))
+
+    # Center partition with gate
+    g1, g2 = 110, 162
+    c.fill_rect(mid_x - 3, ay, 6, g1 - ay, (90, 60, 30))
+    c.fill_rect(mid_x - 3, g2, 6, ay + ah - g2, (90, 60, 30))
+
+    # Elastic cords
+    c.draw_line(ax + 24, ay, ax + 24, ay + ah, (50, 50, 50))
+    c.draw_line(ax + aw - 24, ay, ax + aw - 24, ay + ah, (50, 50, 50))
+
+    # Pucks (1 left, 5 right -> P1 winning!)
+    pucks = [
+        (mid_x - 45, ay + 96, COL_BLUE),
+        (mid_x + 25, ay + 70, COL_RED),
+        (mid_x + 65, ay + 120, COL_RED),
+        (mid_x + 95, ay + 60, COL_BLUE),
+        (mid_x + 115, ay + 140, COL_BLUE),
+        (mid_x + 125, ay + 90, COL_RED),
+    ]
+    for px, py, col in pucks:
+        c.draw_circle(px, py, 10, col)
+        c.draw_circle(px, py, 10, COL_WHITE, False)
+        c.draw_circle(px, py, 4, COL_WHITE, False)
+
+    c.draw_centered_str(ax + 80, 22, "PUCKS: 1", COL_BLUE, 1)
+    c.draw_centered_str(ax + aw - 80, 22, "PUCKS: 5", COL_RED, 1)
+    c.draw_centered_str(mid_x, 22, "WINS: 1  vs  0", COL_WHITE, 1)
+
+    c.draw_centered_str_p1(16, H // 2, "SLING [L]", COL_BLUE, 1)
+    c.draw_centered_str_p2(W - 16, H // 2, "SLING [R]", COL_RED, 1)
+
+    c.save_png("screenshot_slingpuck.png")
+
+
 if __name__ == "__main__":
     make_screenshot_menu()
     make_screenshot_pingpong()
@@ -769,4 +881,7 @@ if __name__ == "__main__":
     make_screenshot_gameover()
     make_screenshot_tictactoe()
     make_screenshot_connect4()
-    print("All 10 screenshots generated successfully.")
+    make_screenshot_sumo()
+    make_screenshot_quickdraw()
+    make_screenshot_slingpuck()
+    print("All 13 screenshots generated successfully.")

@@ -304,6 +304,12 @@ enum MinigameType {
     GAME_REVERSI,
     GAME_BATTLESHIP,
     GAME_TUG_OF_WAR,
+    GAME_SUMO,
+    GAME_SNAKE,
+    GAME_REDHANDS,
+    GAME_KNIFEHIT,
+    GAME_QUICKDRAW,
+    GAME_SLINGPUCK,
     GAME_COUNT
 };
 
@@ -1710,6 +1716,7 @@ struct ChessGame {
 /* ─── APP INSTANCE & MENU ────────────────────────────────────────────── */
 
 #include "games_wave2.hpp"
+#include "games_wave3.hpp"
 
 struct App {
     AppState state;
@@ -1730,6 +1737,12 @@ struct App {
     ReversiGame reversi;
     BattleshipGame battleship;
     TugOfWarGame tugofwar;
+    SumoGame sumo;
+    SnakeGame snake;
+    RedHandsGame redhands;
+    KnifeHitGame knifehit;
+    QuickDrawGame quickdraw;
+    SlingPuckGame slingpuck;
 
     void init() {
         state = STATE_MENU;
@@ -1754,6 +1767,12 @@ struct App {
         if (selected_game == GAME_REVERSI)    reversi.reset(true);
         if (selected_game == GAME_BATTLESHIP) battleship.reset(true);
         if (selected_game == GAME_TUG_OF_WAR) tugofwar.reset(true);
+        if (selected_game == GAME_SUMO)       sumo.reset(true);
+        if (selected_game == GAME_SNAKE)      snake.reset(true);
+        if (selected_game == GAME_REDHANDS)   redhands.reset(true);
+        if (selected_game == GAME_KNIFEHIT)   knifehit.reset(true);
+        if (selected_game == GAME_QUICKDRAW)  quickdraw.reset(true);
+        if (selected_game == GAME_SLINGPUCK)  slingpuck.reset(true);
     }
 
     void update(const GamePadState &pad) {
@@ -1764,9 +1783,12 @@ struct App {
 
             bool l_trig = ((pad_curr.Buttons & PSP_CTRL_LTRIGGER) != 0 && (pad_prev.Buttons & PSP_CTRL_LTRIGGER) == 0);
             bool r_trig = ((pad_curr.Buttons & PSP_CTRL_RTRIGGER) != 0 && (pad_prev.Buttons & PSP_CTRL_RTRIGGER) == 0);
-            if (l_trig || r_trig) {
-                if (menu_cursor < 6) menu_cursor = (menu_cursor + 6) % GAME_COUNT;
-                else menu_cursor = (menu_cursor - 6 + GAME_COUNT) % GAME_COUNT;
+            if (l_trig) {
+                menu_cursor = (menu_cursor - 6 + GAME_COUNT) % GAME_COUNT;
+                selected_game = (MinigameType)menu_cursor;
+                play_tone(520.0f, 35);
+            } else if (r_trig) {
+                menu_cursor = (menu_cursor + 6) % GAME_COUNT;
                 selected_game = (MinigameType)menu_cursor;
                 play_tone(520.0f, 35);
             }
@@ -1823,6 +1845,12 @@ struct App {
             if (selected_game == GAME_REVERSI)    reversi.update(pad, mode, winner);
             if (selected_game == GAME_BATTLESHIP) battleship.update(pad, mode, winner);
             if (selected_game == GAME_TUG_OF_WAR) tugofwar.update(pad, mode, winner);
+            if (selected_game == GAME_SUMO)       sumo.update(pad, mode, winner);
+            if (selected_game == GAME_SNAKE)      snake.update(pad, mode, winner);
+            if (selected_game == GAME_REDHANDS)   redhands.update(pad, mode, winner);
+            if (selected_game == GAME_KNIFEHIT)   knifehit.update(pad, mode, winner);
+            if (selected_game == GAME_QUICKDRAW)  quickdraw.update(pad, mode, winner);
+            if (selected_game == GAME_SLINGPUCK)  slingpuck.update(pad, mode, winner);
 
             if (winner != 0) {
                 state = STATE_GAMEOVER;
@@ -1846,6 +1874,27 @@ struct App {
         }
     }
 
+    void render_active_game(SDL_Renderer *ren) {
+        if (selected_game == GAME_PINGPONG)   pingpong.render(ren, mode);
+        if (selected_game == GAME_AIRHOCKEY)  airhockey.render(ren, mode);
+        if (selected_game == GAME_SPINNERS)   spinners.render(ren, mode);
+        if (selected_game == GAME_TANKS)      tanks.render(ren, mode);
+        if (selected_game == GAME_CHECKERS)   checkers.render(ren, mode);
+        if (selected_game == GAME_CHESS)      chess.render(ren, mode);
+        if (selected_game == GAME_TICTACTOE)  tictactoe.render(ren, mode);
+        if (selected_game == GAME_CONNECT4)   connect4.render(ren, mode);
+        if (selected_game == GAME_DOTSBOXES)  dotsboxes.render(ren, mode);
+        if (selected_game == GAME_REVERSI)    reversi.render(ren, mode);
+        if (selected_game == GAME_BATTLESHIP) battleship.render(ren, mode);
+        if (selected_game == GAME_TUG_OF_WAR) tugofwar.render(ren, mode);
+        if (selected_game == GAME_SUMO)       sumo.render(ren, mode);
+        if (selected_game == GAME_SNAKE)      snake.render(ren, mode);
+        if (selected_game == GAME_REDHANDS)   redhands.render(ren, mode);
+        if (selected_game == GAME_KNIFEHIT)   knifehit.render(ren, mode);
+        if (selected_game == GAME_QUICKDRAW)  quickdraw.render(ren, mode);
+        if (selected_game == GAME_SLINGPUCK)  slingpuck.render(ren, mode);
+    }
+
     void render(SDL_Renderer *ren) {
         if (state == STATE_MENU) {
             draw_centered_str(ren, SCR_W / 2 + 1, 15, "2 PLAYER GAMES", COL_SHADOW, 3);
@@ -1856,19 +1905,23 @@ struct App {
             int page_start = current_page * 6;
             char page_hdr[64];
             if (current_page == 0) {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 1/2: ARCADE & CLASSICS  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 1/3: ARCADE & CLASSICS  [L/R PAGE]");
+            } else if (current_page == 1) {
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 2/3: TABLETOP & STRATEGY  [L/R PAGE]");
             } else {
-                snprintf(page_hdr, sizeof(page_hdr), "PAGE 2/2: TABLETOP & STRATEGY  [L/R PAGE]");
+                snprintf(page_hdr, sizeof(page_hdr), "PAGE 3/3: BRAWLERS & REFLEXES  [L/R PAGE]");
             }
             draw_centered_str(ren, SCR_W / 2, 54, page_hdr, COL_GOLD, 1);
 
             const char *titles1[GAME_COUNT] = {
                 "PING",    "AIR",    "SPINNER", "TANK",   "CHECKERS", "ROYAL",
-                "TIC TAC", "CONNECT", "DOTS &",  "REVERSI", "BATTLE",  "TUG OF"
+                "TIC TAC", "CONNECT", "DOTS &",  "REVERSI", "BATTLE",  "TUG OF",
+                "SUMO",    "NEON",   "RED",     "KNIFE",  "QUICK",   "SLING"
             };
             const char *titles2[GAME_COUNT] = {
                 "PONG",    "HOCKEY", "WAR",     "BATTLE", "DAMA",     "CHESS",
-                "TOE",     "FOUR",   "BOXES",   "OTHELLO", "SHIP",    "WAR"
+                "TOE",     "FOUR",   "BOXES",   "OTHELLO", "SHIP",    "WAR",
+                "RING",    "SNAKE",  "HANDS",   "HIT",    "DRAW",    "PUCK"
             };
             const char *descs[GAME_COUNT] = {
                 "CLASSIC PADDLE RALLY BATTLE",
@@ -1882,7 +1935,13 @@ struct App {
                 "TERRITORY BOX CAPTURE PUZZLE",
                 "DISC SURROUND & FLIP TACTICS",
                 "NAVAL RADAR SALVO STRIKES",
-                "RAPID BUTTON MASHING ROPE PULL"
+                "RAPID BUTTON MASHING ROPE PULL",
+                "HEAVYWEIGHT RING-OUT SHOVING",
+                "TRON LIGHT CYCLES & TRAIL CRASH",
+                "REFLEX HAND SLAP & DODGE DUEL",
+                "ROTATING TIMBER KNIFE THROW",
+                "HIGH NOON WESTERN SHOOTOUT",
+                "FAST FINGER HOCKEY GATE FLING"
             };
 
             for (int idx = 0; idx < 6; idx++) {
@@ -1929,21 +1988,10 @@ struct App {
                 draw_centered_str(ren, SCR_W / 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1);
             }
             draw_centered_str(ren, SCR_W / 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1);
-            draw_centered_str(ren, SCR_W / 2, 256, "[L/R TRIGGERS] FLIP PAGE 1 & 2", COL_GOLD, 1);
+            draw_centered_str(ren, SCR_W / 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3)", COL_GOLD, 1);
 
         } else if (state == STATE_PLAYING) {
-            if (selected_game == GAME_PINGPONG)   pingpong.render(ren, mode);
-            if (selected_game == GAME_AIRHOCKEY)  airhockey.render(ren, mode);
-            if (selected_game == GAME_SPINNERS)   spinners.render(ren, mode);
-            if (selected_game == GAME_TANKS)      tanks.render(ren, mode);
-            if (selected_game == GAME_CHECKERS)   checkers.render(ren, mode);
-            if (selected_game == GAME_CHESS)      chess.render(ren, mode);
-            if (selected_game == GAME_TICTACTOE)  tictactoe.render(ren, mode);
-            if (selected_game == GAME_CONNECT4)   connect4.render(ren, mode);
-            if (selected_game == GAME_DOTSBOXES)  dotsboxes.render(ren, mode);
-            if (selected_game == GAME_REVERSI)    reversi.render(ren, mode);
-            if (selected_game == GAME_BATTLESHIP) battleship.render(ren, mode);
-            if (selected_game == GAME_TUG_OF_WAR) tugofwar.render(ren, mode);
+            render_active_game(ren);
 
             if (mode == MODE_1P_VS_AI) {
                 draw_str(ren, 16, 6, "P1 (BLUE)", COL_BLUE, 1);
@@ -1957,12 +2005,7 @@ struct App {
             }
 
         } else if (state == STATE_PAUSED) {
-            if (selected_game == GAME_PINGPONG)  pingpong.render(ren, mode);
-            if (selected_game == GAME_AIRHOCKEY) airhockey.render(ren, mode);
-            if (selected_game == GAME_SPINNERS)  spinners.render(ren, mode);
-            if (selected_game == GAME_TANKS)     tanks.render(ren, mode);
-            if (selected_game == GAME_CHECKERS)  checkers.render(ren, mode);
-            if (selected_game == GAME_CHESS)     chess.render(ren, mode);
+            render_active_game(ren);
 
             if (mode == MODE_2P_LOCAL) {
                 SDL_Rect pop1 = {40, SCR_H / 2 - 40, 160, 80};

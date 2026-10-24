@@ -342,7 +342,7 @@ def make_screenshot_menu():
     c.draw_centered_str(W // 2, mode_y + 8, "< MODE: 2 PLAYERS (SPLIT OPPS) >", COL_GOLD, 1)
 
     c.draw_centered_str(W // 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1)
-    c.draw_centered_str(W // 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1)
+    c.draw_centered_str(W // 2, 240, "SELECT: TOGGLE MODE   |   START / X / O: BEGIN", COL_WHITE, 1)
     c.draw_centered_str(W // 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3 / 4)", COL_GOLD, 1)
 
     c.save_png("screenshot_menu.png")

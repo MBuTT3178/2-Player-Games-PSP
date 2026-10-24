@@ -1817,8 +1817,8 @@ struct App {
     void update(const GamePadState &pad) {
         if (state == STATE_MENU) {
             static int rep = 0;
-            bool left_req  = pad.p1.left  || pad.p2.left  || ((pad_curr.Buttons & PSP_CTRL_LEFT) != 0);
-            bool right_req = pad.p1.right || pad.p2.right || ((pad_curr.Buttons & PSP_CTRL_RIGHT) != 0);
+            bool left_req  = ((pad_curr.Buttons & PSP_CTRL_LEFT) != 0) || (pad_curr.Lx < 70);
+            bool right_req = ((pad_curr.Buttons & PSP_CTRL_RIGHT) != 0) || (pad_curr.Lx > 185);
 
             bool l_trig = ((pad_curr.Buttons & PSP_CTRL_LTRIGGER) != 0 && (pad_prev.Buttons & PSP_CTRL_LTRIGGER) == 0);
             bool r_trig = ((pad_curr.Buttons & PSP_CTRL_RTRIGGER) != 0 && (pad_prev.Buttons & PSP_CTRL_RTRIGGER) == 0);
@@ -1855,8 +1855,9 @@ struct App {
                 play_tone(580.0f, 30);
             }
 
-            bool start_req = pad.p1.action || pad.p2.action || pad.start_pressed ||
-                             ((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) != 0);
+            bool start_req = pad.start_pressed ||
+                             (((pad_curr.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) != 0) &&
+                              ((pad_prev.Buttons & (PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) == 0));
             if (start_req) {
                 play_tone(660.0f, 50);
                 start_selected_game();
@@ -2048,7 +2049,7 @@ struct App {
             } else {
                 draw_centered_str(ren, SCR_W / 2, 222, "P1 (WEST): DPAD RIGHT=UP + L  |  P2 (EAST): SQUARE=UP + R", COL_DIM, 1);
             }
-            draw_centered_str(ren, SCR_W / 2, 240, "SELECT: TOGGLE MODE   |   START / X / L / R: BEGIN", COL_WHITE, 1);
+            draw_centered_str(ren, SCR_W / 2, 240, "SELECT: TOGGLE MODE   |   START / X / O: BEGIN", COL_WHITE, 1);
             draw_centered_str(ren, SCR_W / 2, 256, "[L/R TRIGGERS] FLIP PAGES (1 / 2 / 3 / 4)", COL_GOLD, 1);
 
         } else if (state == STATE_PLAYING) {

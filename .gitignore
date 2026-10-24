@@ -1,0 +1,10 @@
+# Build artifacts
+*.o
+*.elf
+*.prx
+PARAM.SFO
+EBOOT.PBP
+*.zip
+
+# Local scratch and package directory
+PSP/
